@@ -1,0 +1,11 @@
+run in cmd
+
+--------------------------------------------
+python -m pip install --upgrade "yt-dlp[default]" eel imageio-ffmpeg
+winget install --id=DenoLand.Deno -e
+
+-----------------------------------------------------
+run in powershel admin
+
+python -m pip install --upgrade imageio-ffmpeg yt-dlp-ejs
+winget install --id=DenoLand.Deno -e --source winget
