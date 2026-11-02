@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ADM Pro</title>
+<title>ADM Pro v2.2</title>
 <script>
-  /* تم را قبل از رسم صفحه اعمال می‌کنیم تا چشمک نزند */
   (function () {
     var t = null;
     try { t = localStorage.getItem('adm-theme'); } catch (e) {}
@@ -16,17 +15,16 @@
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet">
 <script src="/eel.js"></script>
 <style>
-  /* ============ توکن‌های طراحی: لاجورد، فیروزه‌ای و زعفرانی ============ */
   :root {
     --font: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
     --mono: Consolas, 'Cascadia Mono', 'Courier New', monospace;
-    --paper: #EEF2F5;      /* چینی سفید */
+    --paper: #EEF2F5;
     --surface: #FFFFFF;
     --sunk: #E5EBF0;
     --line: #D3DCE4;
     --ink: #14213A;
     --muted: #586A7E;
-    --header: #17305C;     /* لاجورد */
+    --header: #17305C;
     --primary: #17305C;
     --primary-hover: #234584;
     --on-primary: #FFFFFF;
@@ -75,14 +73,23 @@
   :focus-visible { outline: 2px solid var(--teal-fill); outline-offset: 2px; }
   .ic { width: 18px; height: 18px; flex: none; }
 
-  /* ============ سربرگ ============ */
   .app-header { background: var(--header); color: #fff; flex: none; }
-  .bar { display: flex; align-items: center; gap: 12px; padding: 14px 24px 0; }
+  .bar { display: flex; align-items: center; gap: 12px; padding: 12px 24px 0; flex-wrap: wrap; }
   .brand { display: flex; align-items: center; gap: 12px; }
   .brand svg { width: 34px; height: 34px; }
-  .brand h1 { font-size: 19px; font-weight: 800; line-height: 1.2; }
-  .brand small { display: block; font-size: 12px; opacity: .7; font-weight: 400; }
+  .brand h1 { font-size: 18px; font-weight: 800; line-height: 1.2; }
+  .brand small { display: block; font-size: 11px; opacity: .7; font-weight: 400; }
   .spacer { flex: 1; }
+  
+  .live-bar {
+    display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: 5px 14px; font-size: 12px;
+  }
+  .live-item { display: flex; align-items: center; gap: 6px; }
+  .live-item b { font-family: var(--mono); color: #4CD0D5; font-size: 13px; direction: ltr; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #9CABC4; }
+  .live-dot.active { background: #6FD9A0; box-shadow: 0 0 8px #6FD9A0; }
+
   .hbtn {
     font: inherit; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer;
     background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22);
@@ -90,10 +97,10 @@
   }
   .hbtn:hover { background: rgba(255,255,255,.2); }
   .hbtn.icon-only { padding: 6px 8px; }
-  .tabs { display: flex; gap: 2px; padding: 8px 20px 0; }
+  .tabs { display: flex; gap: 2px; padding: 6px 20px 0; }
   .tab {
     font: inherit; font-weight: 600; background: none; border: 0; cursor: pointer;
-    color: rgba(255,255,255,.7); padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+    color: rgba(255,255,255,.7); padding: 9px 14px; display: flex; align-items: center; gap: 8px;
     border-bottom: 3px solid transparent;
   }
   .tab:hover { color: #fff; }
@@ -103,41 +110,36 @@
     text-align: center; background: rgba(255,255,255,.2);
   }
   .count.alert { background: var(--madder); color: #fff; }
-  /* نوار کاشی: همان نقشی که در نوار پیشرفت تکرار می‌شود */
   .strip { height: 4px; background: repeating-linear-gradient(to left, var(--teal-fill) 0 14px, transparent 14px 18px); }
 
-  /* ============ چیدمان ============ */
-  main { flex: 1; overflow-y: auto; padding: 22px 24px 32px; }
-  .view { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  main { flex: 1; overflow-y: auto; padding: 20px 24px 32px; }
+  .view { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
 
-  /* ============ دکمه‌ها ============ */
   .btn {
     font: inherit; font-weight: 600; color: var(--ink); cursor: pointer;
     background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-    padding: 8px 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 7px 13px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
     transition: background .15s, border-color .15s;
   }
   .btn:hover { background: var(--sunk); }
   .btn:disabled { opacity: .6; cursor: default; }
   .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
   .btn.primary:hover { background: var(--primary-hover); }
-  .btn.small { padding: 4px 10px; font-size: 13px; }
+  .btn.small { padding: 4px 10px; font-size: 12.5px; }
   .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
   .btn.ghost:hover { background: var(--sunk); color: var(--ink); }
 
-  /* ============ کادر لینک ============ */
-  .linkbox { padding: 22px; }
-  .linkbox h2 { font-size: 18px; font-weight: 800; }
-  .linkbox .lead { color: var(--muted); margin: 2px 0 16px; }
+  .linkbox { padding: 20px; }
+  .linkbox h2 { font-size: 17px; font-weight: 800; }
+  .linkbox .lead { color: var(--muted); margin: 2px 0 14px; font-size: 13px; }
   .field { display: flex; gap: 8px; }
   .field input {
     flex: 1; min-width: 0; direction: ltr; text-align: left; font-family: var(--mono); font-size: 14px;
-    padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px;
+    padding: 11px 14px; border: 1.5px solid var(--line); border-radius: 10px;
     background: var(--sunk); color: var(--ink);
   }
   .field input:focus { outline: none; border-color: var(--teal-fill); background: var(--surface); }
-  .field .btn { padding: 0 18px; }
   .pathline { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
   .pathline .label { color: var(--muted); white-space: nowrap; }
   .pathline .path { flex: 1; min-width: 0; direction: ltr; text-align: left; font-family: var(--mono); font-size: 13px;
@@ -147,123 +149,118 @@
   details.adv .adv-body { padding: 0 0 14px; display: grid; gap: 6px; }
   details.adv select { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line);
     background: var(--surface); color: var(--ink); width: max-content; }
-  .help { color: var(--muted); font-size: 13px; }
+  .help { color: var(--muted); font-size: 12.5px; }
 
-  /* ============ پیام‌ها ============ */
   .notice { border-radius: 10px; padding: 12px 16px; border-inline-start: 4px solid var(--teal-fill);
     background: var(--teal-soft); display: grid; gap: 2px; }
   .notice.warn { border-color: var(--gold-fill); background: var(--gold-soft); }
   .notice.err { border-color: var(--madder); background: var(--madder-soft); }
-  .notice b { font-weight: 700; }
-  .notice .hint { color: var(--ink); opacity: .85; }
-  .notice .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .busy { display: flex; align-items: center; gap: 10px; color: var(--teal); padding: 4px 2px; }
   .spin { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--teal-fill);
     border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ============ نتیجه تحلیل ============ */
-  .result-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  .result-head h3 { font-size: 15px; font-weight: 700; flex: 1; min-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .result-head select { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
-  .selectall { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--sunk); }
+  .result-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .result-head h3 { font-size: 14.5px; font-weight: 700; flex: 1; min-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .result-head select { font: inherit; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .autostart-lbl { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--sunk); padding: 5px 10px; border-radius: 8px; user-select: none; }
+  .selectall { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--sunk); }
   .selectall label, .item { display: flex; align-items: center; gap: 12px; cursor: pointer; }
   input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--teal-fill); flex: none; }
-  .items { max-height: 46vh; overflow-y: auto; }
-  .item { padding: 9px 16px; border-bottom: 1px solid var(--line); }
+  .items { max-height: 44vh; overflow-y: auto; }
+  .item { padding: 8px 16px; border-bottom: 1px solid var(--line); }
   .item:last-child { border-bottom: 0; }
   .item:hover { background: var(--sunk); }
   .item .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .sz { font-family: var(--mono); font-size: 12px; color: var(--teal); direction: ltr; }
   .item .d { color: var(--muted); font-size: 12px; font-family: var(--mono); }
   .single { display: flex; gap: 16px; padding: 16px; align-items: flex-start; }
-  .single img { width: 168px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: var(--sunk); flex: none; }
-  .single .meta { display: grid; gap: 2px; min-width: 0; }
-  .single .meta b { font-size: 15px; }
-  .single .meta span { color: var(--muted); font-size: 13px; }
+  .single img { width: 160px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: var(--sunk); flex: none; }
+  .single .meta { display: grid; gap: 3px; min-width: 0; }
 
-  /* ============ صف دانلود ============ */
-  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
-  .task { padding: 14px 16px; display: grid; gap: 10px; }
-  .task-top { display: flex; align-items: flex-start; gap: 12px; }
-  .task-top h4 { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .chip { font-size: 12px; font-weight: 600; padding: 1px 10px; border-radius: 999px; white-space: nowrap; background: var(--sunk); color: var(--muted); }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .group-card { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+  .group-head {
+    display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--sunk);
+    cursor: pointer; user-select: none; border-bottom: 1px solid var(--line);
+  }
+  .group-card.collapsed .group-head { border-bottom: 0; }
+  .group-card.collapsed .group-body { display: none; }
+  .group-title { font-weight: 700; font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .group-meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .group-body { display: grid; gap: 1px; background: var(--line); }
+  .task { padding: 12px 16px; display: grid; gap: 8px; background: var(--surface); }
+  .task-top { display: flex; align-items: flex-start; gap: 10px; }
+  .task-top h4 { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip { font-size: 11.5px; font-weight: 600; padding: 1px 9px; border-radius: 999px; white-space: nowrap; background: var(--sunk); color: var(--muted); }
   .s-downloading .chip.st { background: var(--teal-soft); color: var(--teal); }
   .s-merging .chip.st { background: var(--gold-soft); color: var(--gold); }
   .s-done .chip.st { background: var(--ok-soft); color: var(--ok); }
   .s-error .chip.st { background: var(--madder-soft); color: var(--madder); }
-  /* نوار پیشرفت به شکل ردیف کاشی */
-  .tiles { height: 10px; background: var(--sunk); border-radius: 3px; overflow: hidden;
+  .tiles { height: 8px; background: var(--sunk); border-radius: 3px; overflow: hidden;
     -webkit-mask: repeating-linear-gradient(to left, #000 0 10px, transparent 10px 13px);
             mask: repeating-linear-gradient(to left, #000 0 10px, transparent 10px 13px); }
   .tiles i { display: block; height: 100%; width: 0; background: var(--teal-fill); transition: width .25s ease; }
   .s-merging .tiles i { background: var(--gold-fill); }
   .s-done .tiles i { background: var(--ok); }
   .s-error .tiles i { background: var(--madder); }
-  .task-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .task-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
   .task-meta .num { font-family: var(--mono); direction: ltr; }
   .task-meta .pct { color: var(--ink); font-weight: 600; }
+  .task-meta .sz-badge { color: var(--teal); font-weight: 600; font-family: var(--mono); direction: ltr; }
   .task-meta .actions { display: flex; gap: 4px; margin-inline-start: auto; }
-  .task-err { background: var(--madder-soft); border-radius: 8px; padding: 8px 12px; display: grid; gap: 0; }
+  .task-err { background: var(--madder-soft); border-radius: 8px; padding: 8px 12px; display: grid; font-size: 12.5px; }
   .task-err b { color: var(--madder); }
-  .empty { text-align: center; color: var(--muted); padding: 44px 20px; display: grid; gap: 14px; justify-items: center; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 20px; display: grid; gap: 12px; justify-items: center; }
 
-  /* ============ خطاها ============ */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; }
+  .stat-card { padding: 14px 16px; display: grid; gap: 4px; }
+  .stat-card span { font-size: 12.5px; color: var(--muted); }
+  .stat-card b { font-size: 19px; font-weight: 800; font-family: var(--mono); color: var(--teal); direction: ltr; text-align: right; }
+  .stat-card small { font-size: 11.5px; color: var(--muted); }
+  .domain-list { padding: 14px 16px; display: grid; gap: 12px; }
+  .domain-row { display: grid; gap: 4px; }
+  .domain-top { display: flex; justify-content: space-between; font-size: 13px; }
+  .domain-top b { font-family: var(--mono); direction: ltr; }
+  .domain-bar { height: 8px; background: var(--sunk); border-radius: 4px; overflow: hidden; }
+  .domain-bar i { display: block; height: 100%; background: var(--teal-fill); border-radius: 4px; }
+
   .section-title { font-size: 15px; font-weight: 700; }
   .health { padding: 6px 16px; }
   .hrow { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .hrow:last-child { border-bottom: 0; }
   .hrow .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 8px; background: var(--ok); }
   .hrow.bad .dot { background: var(--gold-fill); }
-  .hrow b { font-weight: 600; }
-  .hrow .val { display: block; direction: ltr; text-align: right; font-family: var(--mono); font-size: 12px; color: var(--muted); word-break: break-all; }
-  .hrow p { color: var(--gold); font-size: 13px; }
+  .hrow .val { display: block; direction: ltr; text-align: right; font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .hrow .st { font-size: 12px; font-weight: 600; padding: 1px 10px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); }
   .hrow.bad .st { background: var(--gold-soft); color: var(--gold); }
   .report-box { padding: 16px; display: grid; gap: 12px; }
-  .report-box p { color: var(--muted); }
   .event { padding: 14px 16px; display: grid; gap: 4px; border-inline-start: 4px solid var(--madder); }
-  .event.flash { animation: flash 1.4s ease; }
-  @keyframes flash { 0%,60% { background: var(--madder-soft); } 100% { background: var(--surface); } }
   .event header { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 12px; }
-  .event header .code { font-family: var(--mono); margin-inline-start: auto; }
-  .event h4 { font-size: 14px; font-weight: 700; }
-  .event .ev-url, .event .ev-item { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .event .ev-url { font-family: var(--mono); }
-  .event details summary { cursor: pointer; color: var(--teal); font-size: 13px; }
   .event pre { direction: ltr; text-align: left; font-family: var(--mono); font-size: 12px; background: var(--sunk);
-    border-radius: 8px; padding: 10px 12px; margin-top: 6px; white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; }
-  .event .btn { justify-self: start; margin-top: 4px; }
+    border-radius: 8px; padding: 10px; margin-top: 6px; white-space: pre-wrap; max-height: 200px; overflow: auto; }
 
-  /* ============ پیام شناور و پنجره گزارش ============ */
   .toast { position: fixed; inset-inline: 0; bottom: 22px; margin: 0 auto; width: max-content; max-width: 86%;
     background: var(--header); color: #fff; padding: 10px 18px; border-radius: 8px; opacity: 0; pointer-events: none;
-    transform: translateY(8px); transition: opacity .2s, transform .2s; border: 1px solid rgba(255,255,255,.18); z-index: 50; }
+    transform: translateY(8px); transition: opacity .2s, transform .2s; z-index: 50; }
   .toast.show { opacity: 1; transform: none; }
   .toast.err { background: var(--madder); }
-  .toast.ok { background: var(--ok); color: #fff; }
-  dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 18px; width: min(720px, 92vw); }
-  dialog::backdrop { background: rgba(5,12,28,.55); }
-  dialog textarea { width: 100%; height: 50vh; direction: ltr; font-family: var(--mono); font-size: 12px; padding: 10px;
-    border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); color: var(--ink); margin: 10px 0; }
-
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
-  @media (max-width: 640px) {
-    .single { flex-direction: column; } .single img { width: 100%; }
-    .tab span.lbl { display: none; }
-  }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .toast.ok { background: var(--ok); }
 </style>
 </head>
 <body>
 
-<!-- آیکون‌ها -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="i-paste" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/></symbol>
     <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 20h18L12 4z"/><path d="M12 10v4M12 17.2v.1"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></symbol>
@@ -286,39 +283,59 @@
         </g>
         <path d="M16 11.5v8M12.8 16.8 16 20l3.2-3.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <h1>ADM Pro<small>دانلود ویدیو و پلی‌لیست</small></h1>
+      <h1>ADM Pro <small>نسخه ۲.۲ — مدیریت هوشمند دانلود</small></h1>
     </div>
+
+    <div class="live-bar" title="وضعیت لحظه‌ای دانلود و مصرف">
+      <div class="live-item">
+        <span class="live-dot" id="live-dot"></span>
+        <span>سرعت:</span>
+        <b id="live-speed">0 KB/s</b>
+      </div>
+      <div class="live-item">
+        <span>دانلود شده (کل):</span>
+        <b id="live-total">0 MB</b>
+      </div>
+      <div class="live-item">
+        <span>فعال:</span>
+        <b id="live-active">0</b>
+      </div>
+    </div>
+
     <div class="spacer"></div>
     <button class="hbtn" data-act="copy-report" title="کپی گزارش کامل برای ارسال به پشتیبان">
-      <svg class="ic"><use href="#i-file"/></svg><span>گزارش برای پشتیبان</span>
+      <svg class="ic"><use href="#i-file"/></svg><span>گزارش پشتیبان</span>
     </button>
-    <button class="hbtn icon-only" id="theme-btn" data-act="theme" aria-label="تغییر حالت روشن و تیره" title="حالت روشن و تیره"></button>
+    <button class="hbtn icon-only" id="theme-btn" data-act="theme" title="تغییر تم"></button>
   </div>
+
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tab-add" data-tab="add" aria-selected="true">
       <svg class="ic"><use href="#i-plus"/></svg><span class="lbl">دانلود جدید</span>
     </button>
     <button class="tab" role="tab" id="tab-queue" data-tab="queue" aria-selected="false">
-      <svg class="ic"><use href="#i-down"/></svg><span class="lbl">صف دانلود</span><span class="count" id="cnt-queue" hidden>0</span>
+      <svg class="ic"><use href="#i-down"/></svg><span class="lbl">صف و دسته‌بندی‌ها</span><span class="count" id="cnt-queue" hidden>0</span>
+    </button>
+    <button class="tab" role="tab" id="tab-stats" data-tab="stats" aria-selected="false">
+      <svg class="ic"><use href="#i-chart"/></svg><span class="lbl">آمار و مصرف دیتا</span>
     </button>
     <button class="tab" role="tab" id="tab-errors" data-tab="errors" aria-selected="false">
-      <svg class="ic"><use href="#i-alert"/></svg><span class="lbl">خطاها و گزارش</span><span class="count alert" id="cnt-errors" hidden>0</span>
+      <svg class="ic"><use href="#i-alert"/></svg><span class="lbl">خطاها</span><span class="count alert" id="cnt-errors" hidden>0</span>
     </button>
   </div>
   <div class="strip"></div>
 </header>
 
 <main>
-  <!-- ========== تب افزودن ========== -->
   <section class="view" id="view-add">
     <div id="env-banner"></div>
 
     <div class="panel linkbox">
       <h2>لینک ویدیو یا پلی‌لیست</h2>
-      <p class="lead">لینک را بچسبانید و «بررسی لینک» را بزنید. برای پلی‌لیست می‌توانید ویدیوهای دلخواه را انتخاب کنید.</p>
+      <p class="lead">لینک را وارد کنید تا حجم تقریبی و لیست ویدیوها استخراج شود.</p>
       <div class="field">
-        <button class="btn" data-act="paste" aria-label="چسباندن از کلیپ‌بورد" title="چسباندن از کلیپ‌بورد"><svg class="ic"><use href="#i-paste"/></svg></button>
-        <input type="text" id="url" placeholder="https://..." autocomplete="off" spellcheck="false" aria-label="لینک ویدیو">
+        <button class="btn" data-act="paste" title="چسباندن از کلیپ‌بورد"><svg class="ic"><use href="#i-paste"/></svg></button>
+        <input type="text" id="url" placeholder="https://..." autocomplete="off" spellcheck="false">
         <button class="btn primary" id="analyze-btn" data-act="analyze"><svg class="ic"><use href="#i-search"/></svg><span>بررسی لینک</span></button>
       </div>
     </div>
@@ -328,12 +345,16 @@
     <div class="panel" id="result" hidden>
       <div class="result-head">
         <h3 id="result-title"></h3>
-        <label class="help" for="quality">کیفیت</label>
+        <label class="autostart-lbl" title="اگر تیک نزنید، فقط به لیست دانلود اضافه می‌شود و منتظر می‌ماند">
+          <input type="checkbox" id="auto-start" checked>
+          <span>شروع خودکار دانلود</span>
+        </label>
         <select id="quality"></select>
         <button class="btn primary" id="queue-btn" data-act="to-queue"><svg class="ic"><use href="#i-plus"/></svg><span>افزودن به صف</span></button>
       </div>
       <div class="selectall" id="selectall" hidden>
         <label><input type="checkbox" id="check-all"><span>انتخاب همه ویدیوها</span></label>
+        <span class="help" id="selected-size-info"></span>
       </div>
       <div class="items" id="items"></div>
     </div>
@@ -341,13 +362,12 @@
     <div class="panel">
       <div class="pathline">
         <span class="label">محل ذخیره</span>
-        <span class="path" id="path" title=""></span>
+        <span class="path" id="path"></span>
         <button class="btn small" data-act="pick-dir"><svg class="ic"><use href="#i-folder"/></svg><span>تغییر پوشه</span></button>
       </div>
       <details class="adv">
-        <summary>تنظیمات پیشرفته</summary>
+        <summary>تنظیمات پیشرفته (کوکی مرورگر)</summary>
         <div class="adv-body">
-          <label for="cookies"><b>کوکی‌های مرورگر</b></label>
           <select id="cookies">
             <option value="">بدون کوکی (پیش‌فرض)</option>
             <option value="firefox">Firefox</option>
@@ -358,42 +378,48 @@
             <option value="vivaldi">Vivaldi</option>
             <option value="chromium">Chromium</option>
           </select>
-          <p class="help">برای ویدیوهای نیازمند ورود، محدودیت سنی یا درخواست تأیید هویت یوتیوب. باید در همان مرورگر وارد حساب شده باشید. اگر با Chrome یا Edge خطا داد، Firefox را امتحان کنید.</p>
+          <p class="help">برای ویدیوهای دارای محدودیت سنی یا نیازمند ورود به حساب کاربری.</p>
         </div>
       </details>
     </div>
   </section>
 
-  <!-- ========== تب صف ========== -->
   <section class="view" id="view-queue" hidden>
     <div class="toolbar">
-      <button class="btn small" data-act="retry-all"><svg class="ic"><use href="#i-retry"/></svg><span>تلاش مجدد ناموفق‌ها</span></button>
+      <button class="btn primary small" data-act="start-all"><svg class="ic"><use href="#i-play"/></svg><span>شروع همه دانلودهای منتظر</span></button>
+      <button class="btn small" data-act="pause-all"><svg class="ic"><use href="#i-pause"/></svg><span>توقف موقت همه</span></button>
+      <button class="btn small" data-act="toggle-collapse-all"><svg class="ic"><use href="#i-eye"/></svg><span id="collapse-lbl">جمع کردن همه (مخفی‌سازی)</span></button>
+      <span class="spacer"></span>
       <button class="btn small" data-act="clear-done"><svg class="ic"><use href="#i-trash"/></svg><span>پاک‌کردن تکمیل‌شده‌ها</span></button>
     </div>
     <div id="queue-list" style="display:grid;gap:12px"></div>
   </section>
 
-  <!-- ========== تب خطاها ========== -->
+  <section class="view" id="view-stats" hidden>
+    <h2 class="section-title">میزان مصرف اینترنت و دانلود در بازه‌های زمانی</h2>
+    <div class="stats-grid" id="stats-time-cards"></div>
+
+    <h2 class="section-title" style="margin-top:8px">بیشترین سایت‌های دانلود شده (بر اساس حجم و تعداد)</h2>
+    <div class="panel domain-list" id="stats-domains"></div>
+  </section>
+
   <section class="view" id="view-errors" hidden>
     <div class="panel report-box">
       <h2 class="section-title">گزارش برای پشتیبان</h2>
-      <p>گزارش شامل نسخه‌ها، تنظیمات، خطاهای اخیر و لاگ است. دکمه‌ی اول را بزنید و متن را همان‌جا بفرستید.</p>
       <div class="toolbar">
         <button class="btn primary" data-act="copy-report"><svg class="ic"><use href="#i-copy"/></svg><span>کپی گزارش کامل</span></button>
         <button class="btn" data-act="save-report"><svg class="ic"><use href="#i-file"/></svg><span>ذخیره در فایل</span></button>
         <button class="btn" data-act="open-logs"><svg class="ic"><use href="#i-folder"/></svg><span>باز کردن پوشه لاگ</span></button>
       </div>
     </div>
-
     <div class="panel health">
       <div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
-        <h2 class="section-title">وضعیت سیستم</h2>
+        <h2 class="section-title">وضعیت ابزارهای سیستم</h2>
         <span class="spacer"></span>
         <button class="btn small ghost" data-act="recheck"><svg class="ic"><use href="#i-retry"/></svg><span>بررسی دوباره</span></button>
       </div>
       <div id="health"></div>
     </div>
-
     <div style="display:flex;align-items:center">
       <h2 class="section-title">خطاهای ثبت‌شده</h2>
       <span class="spacer"></span>
@@ -403,27 +429,48 @@
   </section>
 </main>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-<dialog id="report-dlg">
-  <b>گزارش را انتخاب و کپی کنید</b>
-  <p class="help">کپی خودکار انجام نشد. با Ctrl+A و Ctrl+C متن را کپی کنید.</p>
-  <textarea id="report-text" readonly></textarea>
-  <button class="btn" data-act="close-dlg">بستن</button>
-</dialog>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
-/* ======================================================================
-   وضعیت و ابزارهای کمکی
-   ====================================================================== */
-const S = { tasks: new Map(), events: [], items: [], selected: new Set(), env: [], analyzing: false, analyzeTimer: null };
+const S = {
+  tasks: new Map(),
+  events: [],
+  items: [],
+  selected: new Set(),
+  env: [],
+  analyzing: false,
+  analysisData: null,
+  collapsedGroups: new Set(),
+  allCollapsed: false
+};
+
+try {
+  const savedCol = JSON.parse(localStorage.getItem('adm-collapsed') || '[]');
+  savedCol.forEach(g => S.collapsedGroups.add(g));
+} catch (e) {}
+
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ic = n => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+
 const STATUS = {
-  queued: 'در صف انتظار', downloading: 'در حال دانلود', merging: 'در حال ادغام تصویر و صدا',
-  done: 'تکمیل شد', error: 'ناموفق', cancelled: 'لغو شد'
+  paused: 'منتظر شروع',
+  queued: 'در نوبت دانلود',
+  downloading: 'در حال دانلود',
+  merging: 'در حال ادغام صدا و تصویر',
+  done: 'تکمیل شده',
+  error: 'ناموفق',
+  cancelled: 'متوقف شده'
 };
-const WHERE = { analyze: 'بررسی لینک', download: 'دانلود', python: 'برنامه', js: 'رابط گرافیکی' };
+
+function fmtBytes(bytes) {
+  bytes = Number(bytes) || 0;
+  if (bytes <= 0) return 'نامشخص';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+  return `${bytes.toFixed(i >= 2 ? 1 : 0)} ${units[i]}`;
+}
 
 function fmtDur(sec) {
   if (!sec) return '';
@@ -437,118 +484,78 @@ function toast(msg, kind = '') {
   const t = $('#toast');
   t.textContent = msg; t.className = 'toast show ' + kind;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3400);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3200);
 }
 
-/* خطاهای خود رابط گرافیکی هم به لاگ پایتون فرستاده می‌شوند */
-function reportJsError(message, stack) {
-  try { eel.log_js_error(String(message), String(stack || '')); } catch (e) { /* ارتباط قطع است */ }
-}
-window.addEventListener('error', e => reportJsError(e.message, e.error && e.error.stack));
-window.addEventListener('unhandledrejection', e => reportJsError('Unhandled promise: ' + (e.reason && e.reason.message || e.reason), e.reason && e.reason.stack));
-
-/* فراخوانی توابع پایتون با مدیریت خطا */
 async function py(fn, ...args) {
   try { return await eel[fn](...args)(); }
-  catch (e) { reportJsError('فراخوانی ' + fn + ' ناموفق بود: ' + e, e && e.stack); toast('ارتباط با برنامه برقرار نشد', 'err'); return null; }
+  catch (e) { toast('ارتباط با هسته برنامه برقرار نشد', 'err'); return null; }
 }
 
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* ادامه با روش جایگزین */ }
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
-    document.body.appendChild(ta); ta.select();
-    const ok = document.execCommand('copy'); ta.remove(); return ok;
-  } catch (e) { return false; }
+function saveCollapsedState() {
+  try { localStorage.setItem('adm-collapsed', JSON.stringify([...S.collapsedGroups])); } catch (e) {}
 }
 
-/* ======================================================================
-   تم و تب‌ها
-   ====================================================================== */
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   $('#theme-btn').innerHTML = ic(t === 'dark' ? 'sun' : 'moon');
   try { localStorage.setItem('adm-theme', t); } catch (e) {}
 }
+
 function switchTab(name) {
-  for (const n of ['add', 'queue', 'errors']) {
+  for (const n of ['add', 'queue', 'stats', 'errors']) {
     $('#view-' + n).hidden = n !== name;
     $('#tab-' + n).setAttribute('aria-selected', String(n === name));
   }
-  if (name === 'errors') { S.seenEvents = S.events.length; updateBadges(); }
+  if (name === 'stats') renderStats();
+  if (name === 'errors') { S.seenEvents = S.events.length; updateHeaderAndBadges(); }
 }
 
-/* ======================================================================
-   وضعیت سیستم و هشدار ابزارهای ناقص
-   ====================================================================== */
 function renderEnv() {
   $('#health').innerHTML = S.env.map(c => `
     <div class="hrow ${c.ok ? '' : 'bad'}">
       <span class="dot"></span>
-      <div><b>${esc(c.label)}</b><span class="val">${esc(c.value)}</span>
-        ${c.ok ? '' : `<p>${esc(c.impact)} ${esc(c.fix)}</p>`}</div>
+      <div><b>${esc(c.label)}</b><span class="val">${esc(c.value)}</span></div>
       <span class="st">${c.ok ? 'آماده' : 'نیاز به اقدام'}</span>
     </div>`).join('');
-  const bad = S.env.filter(c => !c.ok);
-  $('#env-banner').innerHTML = bad.length ? `
-    <div class="notice warn">
-      <b>${bad.length} مورد نیاز به بررسی دارد</b>
-      <span class="hint">${esc(bad.map(c => c.label).join('، '))}. تا رفع نشود، بعضی دانلودها ممکن است خطا بدهند.</span>
-      <div class="row"><button class="btn small" data-act="goto-errors">دیدن جزئیات و راه‌حل</button></div>
-    </div>` : '';
 }
 
-/* ======================================================================
-   تحلیل لینک
-   ====================================================================== */
 function setAnalyzing(on) {
   S.analyzing = on;
   const b = $('#analyze-btn');
   b.disabled = on;
   b.innerHTML = on ? '<span class="spin"></span><span>در حال بررسی…</span>' : ic('search') + '<span>بررسی لینک</span>';
-  clearTimeout(S.analyzeTimer);
-  if (on) {
-    $('#add-notice').innerHTML = '<div class="busy"><span class="spin"></span><span>در حال استخراج اطلاعات. پلی‌لیست‌های بزرگ چند ثانیه طول می‌کشند.</span></div>';
-    S.analyzeTimer = setTimeout(() => {
-      if (!S.analyzing) return;
-      setAnalyzing(false);
-      showNotice('err', 'بررسی لینک بیش از ۳ دقیقه طول کشید', 'اتصال اینترنت را بررسی کنید و دوباره امتحان کنید.');
-      reportJsError('Analyze timeout (180s)', '');
-    }, 180000);
-  }
-}
-
-function showNotice(kind, title, hint, ev) {
-  $('#add-notice').innerHTML = `
-    <div class="notice ${kind}">
-      <b>${esc(title)}</b>
-      ${hint ? `<span class="hint">${esc(hint)}</span>` : ''}
-      ${ev ? `<div class="row">
-        <button class="btn small" data-act="copy-event" data-id="${esc(ev.id)}">${ic('copy')}<span>کپی جزئیات خطا</span></button>
-        <button class="btn small" data-act="copy-report">${ic('file')}<span>گزارش کامل</span></button></div>` : ''}
-    </div>`;
+  $('#add-notice').innerHTML = on ? '<div class="busy"><span class="spin"></span><span>در حال استخراج اطلاعات و حجم تقریبی...</span></div>' : '';
 }
 
 function startAnalyze() {
   const url = $('#url').value.trim();
-  if (!url) { showNotice('warn', 'لینکی وارد نشده است', 'لینک را در کادر بالا بچسبانید.'); return; }
-  if (S.analyzing) return;
+  if (!url || S.analyzing) return;
   $('#result').hidden = true;
   setAnalyzing(true);
-  eel.analyze_url(url);   // نتیجه از طریق render_analysis یا analysis_error می‌رسد
+  eel.analyze_url(url);
 }
 
 function fillQuality(heights) {
   const list = heights && heights.length ? heights : [1080, 720, 480, 360];
-  $('#quality').innerHTML = '<option value="best">بهترین کیفیت موجود</option>' +
+  $('#quality').innerHTML = '<option value="best">بهترین کیفیت</option>' +
     list.map(h => `<option value="${h}p">${h}p</option>`).join('');
 }
 
-function updateSelectedCount() {
-  const n = S.selected.size;
+function updateSelectedInfo() {
+  const qVal = $('#quality').value;
+  if (S.analysisData && S.analysisData.type === 'single' && S.analysisData.size_map) {
+    const sz = S.analysisData.size_map[qVal] || S.analysisData.size_map['best'] || 0;
+    S.items[0].size_bytes = sz;
+    const el = $('#single-est-size');
+    if (el) el.textContent = '~ ' + fmtBytes(sz);
+  }
+  const chosen = S.items.filter(i => S.selected.has(i.id));
+  const totalBytes = chosen.reduce((acc, i) => acc + (Number(i.size_bytes) || 0), 0);
+  const n = chosen.length;
   $('#queue-btn').innerHTML = ic('plus') + `<span>افزودن به صف${n > 1 ? ` (${n})` : ''}</span>`;
   $('#queue-btn').disabled = n === 0;
+  $('#selected-size-info').textContent = totalBytes > 0 ? `حجم تقریبی انتخاب‌شده: ~ ${fmtBytes(totalBytes)}` : '';
   const all = $('#check-all');
   all.checked = S.items.length > 0 && n === S.items.length;
   all.indeterminate = n > 0 && n < S.items.length;
@@ -557,7 +564,7 @@ function updateSelectedCount() {
 eel.expose(render_analysis);
 function render_analysis(data) {
   setAnalyzing(false);
-  $('#add-notice').innerHTML = '';
+  S.analysisData = data;
   $('#result-title').textContent = data.title;
   S.items = []; S.selected = new Set();
   const box = $('#items');
@@ -565,73 +572,83 @@ function render_analysis(data) {
   if (data.type === 'playlist') {
     fillQuality(null);
     S.items = data.items;
+    data.items.forEach(i => S.selected.add(i.id));
     $('#selectall').hidden = false;
     box.className = 'items';
     box.innerHTML = data.items.map(i => `
-      <label class="item"><input type="checkbox" class="pick" value="${esc(i.id)}">
+      <label class="item">
+        <input type="checkbox" class="pick" value="${esc(i.id)}" checked>
         <span class="t" title="${esc(i.title)}">${esc(i.title)}</span>
-        <span class="d">${esc(fmtDur(i.duration))}</span></label>`).join('');
+        <span class="sz">${i.size_bytes ? '~ ' + fmtBytes(i.size_bytes) : ''}</span>
+        <span class="d">${esc(fmtDur(i.duration))}</span>
+      </label>`).join('');
   } else {
     fillQuality(data.heights);
-    const item = { id: 'single-' + Date.now(), title: data.title, url: data.url };
+    const item = { id: 'single-' + Date.now(), title: data.title, url: data.url, size_bytes: data.size_bytes || 0 };
     S.items = [item]; S.selected.add(item.id);
     $('#selectall').hidden = true;
     box.className = '';
     box.innerHTML = `
       <div class="single">
         ${data.thumb ? `<img src="${esc(data.thumb)}" alt="" onerror="this.remove()">` : ''}
-        <div class="meta"><b>${esc(data.title)}</b>
-          ${data.uploader ? `<span>${esc(data.uploader)}</span>` : ''}
-          ${data.duration ? `<span>مدت: ${esc(fmtDur(data.duration))}</span>` : ''}
-          <span>ویدیوی تکی</span></div>
+        <div class="meta">
+          <b>${esc(data.title)}</b>
+          ${data.uploader ? `<span class="help">${esc(data.uploader)}</span>` : ''}
+          <span class="help">مدت: ${esc(fmtDur(data.duration) || 'نامشخص')} | حجم تقریبی: <b id="single-est-size" style="color:var(--teal)">~ ${fmtBytes(item.size_bytes)}</b></span>
+        </div>
       </div>`;
   }
-  updateSelectedCount();
+  updateSelectedInfo();
   $('#result').hidden = false;
 }
 
 eel.expose(analysis_error);
 function analysis_error(ev) {
   setAnalyzing(false);
-  showNotice('err', ev.title, ev.hint, ev);
+  $('#add-notice').innerHTML = `<div class="notice err"><b>${esc(ev.title)}</b><span>${esc(ev.hint)}</span></div>`;
 }
 
 async function sendToQueue() {
   const items = S.items.filter(i => S.selected.has(i.id));
-  if (!items.length) { toast('حداقل یک ویدیو را انتخاب کنید', 'err'); return; }
-  const added = await py('add_to_queue', items, $('#quality').value);
+  if (!items.length) return;
+  const startNow = $('#auto-start').checked;
+  const gTitle = S.analysisData ? S.analysisData.title : '';
+  const added = await py('add_to_queue', items, $('#quality').value, startNow, gTitle);
   $('#result').hidden = true;
   $('#url').value = '';
-  if (added === 0) toast('این ویدیوها از قبل در صف هستند');
+  toast(startNow ? `${added} مورد به صف اضافه و دانلود شروع شد` : `${added} مورد در لیست قرار گرفت (منتظر شروع)`, 'ok');
   switchTab('queue');
 }
 
-/* ======================================================================
-   صف دانلود
-   ====================================================================== */
 const abtn = (act, id, icon, label) =>
   `<button class="btn small ghost" data-act="${act}" data-id="${esc(id)}" title="${label}">${ic(icon)}<span>${label}</span></button>`;
 
 function taskHTML(t) {
   const pct = Math.max(0, Math.min(100, Number(t.progress) || 0));
   const q = t.quality === 'best' ? 'بهترین کیفیت' : t.quality + 'p';
+  const szText = t.size_bytes > 0 ? fmtBytes(t.size_bytes) : 'در حال محاسبه حجم...';
   let acts = '';
-  if (['queued', 'downloading', 'merging'].includes(t.status)) acts = abtn('cancel', t.id, 'x', 'لغو');
-  else if (t.status === 'done') acts = abtn('folder', t.id, 'folder', 'نمایش در پوشه') + abtn('remove', t.id, 'trash', 'حذف از لیست');
-  else if (t.status === 'error') acts = abtn('retry', t.id, 'retry', 'تلاش مجدد') + abtn('remove', t.id, 'trash', 'حذف');
-  else acts = abtn('retry', t.id, 'retry', 'تلاش مجدد') + abtn('remove', t.id, 'trash', 'حذف');
+  if (['queued', 'downloading', 'merging'].includes(t.status)) {
+    acts = abtn('cancel', t.id, 'pause', 'توقف');
+  } else if (t.status === 'done') {
+    acts = abtn('folder', t.id, 'folder', 'پوشه') + abtn('remove', t.id, 'trash', 'حذف');
+  } else {
+    acts = abtn('retry', t.id, 'play', 'شروع دانلود') + abtn('remove', t.id, 'trash', 'حذف');
+  }
   const err = t.status === 'error' && t.error ? `
-    <div class="task-err"><b>${esc(t.error.title)}</b><span>${esc(t.error.hint)}</span>
-      <div style="margin-top:4px"><button class="btn small" data-act="details" data-ev="${esc(t.error.event)}">جزئیات فنی</button></div></div>` : '';
+    <div class="task-err"><b>${esc(t.error.title)}</b><span>${esc(t.error.hint)}</span></div>` : '';
   return `
-  <article class="panel task s-${t.status}" id="task-${esc(t.id)}" data-status="${t.status}">
-    <div class="task-top"><h4 title="${esc(t.title)}">${esc(t.title)}</h4>
-      <span class="chip st">${STATUS[t.status] || esc(t.status)}</span></div>
-    <div class="tiles" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+  <article class="task s-${t.status}" id="task-${esc(t.id)}">
+    <div class="task-top">
+      <h4 title="${esc(t.title)}">${esc(t.title)}</h4>
+      <span class="chip st">${STATUS[t.status] || esc(t.status)}</span>
+    </div>
+    <div class="tiles"><i style="width:${pct}%"></i></div>
     <div class="task-meta">
       <span class="num pct">${pct.toFixed(pct < 100 ? 1 : 0)}%</span>
+      <span class="sz-badge" id="sz-${esc(t.id)}">${szText}</span>
       <span class="num spd">${esc(t.speed || '')}</span>
-      <span class="num eta">${t.eta ? 'باقی‌مانده ' + esc(t.eta) : ''}</span>
+      <span class="num eta">${t.eta ? 'مانده: ' + esc(t.eta) : ''}</span>
       <span>${esc(q)}</span>
       <span class="actions">${acts}</span>
     </div>${err}
@@ -640,10 +657,48 @@ function taskHTML(t) {
 
 function renderQueue() {
   const arr = [...S.tasks.values()];
-  $('#queue-list').innerHTML = arr.length ? arr.map(taskHTML).join('') : `
-    <div class="panel empty"><span>صف خالی است. لینکی را بررسی کنید و ویدیوها را به صف اضافه کنید.</span>
-    <button class="btn primary" data-tab="add">افزودن لینک</button></div>`;
-  updateBadges();
+  if (!arr.length) {
+    $('#queue-list').innerHTML = `<div class="panel empty"><span>صف دانلود خالی است.</span></div>`;
+    updateHeaderAndBadges();
+    return;
+  }
+
+  const groups = new Map();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const t = arr[i];
+    const gid = t.group_id || 'default';
+    if (!groups.has(gid)) {
+      groups.set(gid, { id: gid, title: t.group_title || 'سایر دانلودها', items: [] });
+    }
+    groups.get(gid).items.push(t);
+  }
+
+  let html = '';
+  for (const g of groups.values()) {
+    g.items.reverse();
+    const isCollapsed = S.collapsedGroups.has(g.id);
+    const totalSz = g.items.reduce((a, x) => a + (Number(x.size_bytes) || 0), 0);
+    const doneCnt = g.items.filter(x => x.status === 'done').length;
+    const hasPending = g.items.some(x => ['paused', 'cancelled', 'error'].includes(x.status));
+
+    html += `
+    <div class="group-card ${isCollapsed ? 'collapsed' : ''}" id="grp-${esc(g.id)}">
+      <div class="group-head" data-act="toggle-group" data-id="${esc(g.id)}">
+        <span class="group-title">📁 ${esc(g.title)}</span>
+        <div class="group-meta">
+          <span>${doneCnt} از ${g.items.length} تکمیل</span>
+          ${totalSz > 0 ? `<span class="chip">${fmtBytes(totalSz)}</span>` : ''}
+          ${hasPending ? `<button class="btn small primary" data-act="start-group" data-id="${esc(g.id)}">${ic('play')}<span>شروع این دسته</span></button>` : ''}
+          <button class="btn small ghost" data-act="remove-group" data-id="${esc(g.id)}" title="حذف کل این دسته">${ic('trash')}</button>
+        </div>
+      </div>
+      <div class="group-body">
+        ${g.items.map(taskHTML).join('')}
+      </div>
+    </div>`;
+  }
+  $('#queue-list').innerHTML = html;
+  updateHeaderAndBadges();
 }
 
 eel.expose(update_queue_ui);
@@ -659,115 +714,184 @@ function update_task(t) {
   const el = document.getElementById('task-' + t.id);
   if (!el) { renderQueue(); return; }
   if (prev && prev.status === t.status && t.status === 'downloading') {
-    /* فقط اعداد را به‌روز می‌کنیم تا کل کارت دوباره ساخته نشود */
     const pct = Math.max(0, Math.min(100, Number(t.progress) || 0));
     el.querySelector('.tiles i').style.width = pct + '%';
     el.querySelector('.pct').textContent = pct.toFixed(1) + '%';
     el.querySelector('.spd').textContent = t.speed || '';
-    el.querySelector('.eta').textContent = t.eta ? 'باقی‌مانده ' + t.eta : '';
+    el.querySelector('.eta').textContent = t.eta ? 'مانده: ' + t.eta : '';
+    if (t.size_bytes > 0) {
+      const szEl = document.getElementById('sz-' + t.id);
+      if (szEl) szEl.textContent = fmtBytes(t.size_bytes);
+    }
   } else {
-    el.outerHTML = taskHTML(t);
+    renderQueue();
   }
-  updateBadges();
+  updateHeaderAndBadges();
 }
 
-/* ======================================================================
-   خطاها
-   ====================================================================== */
-function eventText(ev) {
-  return `[${ev.time}] ${WHERE[ev.where] || ev.where} / ${ev.code}\n${ev.title}\n` +
-    (ev.item ? `آیتم: ${ev.item}\n` : '') + (ev.url ? `URL: ${ev.url}\n` : '') + `\n${ev.detail}`;
+function updateHeaderAndBadges() {
+  const all = [...S.tasks.values()];
+  const active = all.filter(t => ['queued', 'downloading', 'merging'].includes(t.status));
+  const downloading = all.filter(t => t.status === 'downloading');
+
+  const totalSpeedBps = downloading.reduce((a, t) => a + (Number(t.speed_bps) || 0), 0);
+  const totalDownloaded = all.reduce((a, t) => {
+    if (t.status === 'done') return a + (Number(t.size_bytes) || Number(t.downloaded_bytes) || 0);
+    return a + (Number(t.downloaded_bytes) || 0);
+  }, 0);
+
+  $('#live-dot').className = 'live-dot' + (downloading.length ? ' active' : '');
+  $('#live-speed').textContent = totalSpeedBps >= 1048576
+    ? `${(totalSpeedBps / 1048576).toFixed(1)} MB/s`
+    : `${Math.round(totalSpeedBps / 1024)} KB/s`;
+  $('#live-total').textContent = fmtBytes(totalDownloaded);
+  $('#live-active').textContent = active.length;
+
+  const cq = $('#cnt-queue'); cq.textContent = active.length; cq.hidden = active.length === 0;
+  const unseen = Math.max(0, S.events.length - (S.seenEvents || 0));
+  const ce = $('#cnt-errors'); ce.textContent = unseen; ce.hidden = unseen === 0;
 }
 
-function eventHTML(ev) {
-  return `
-  <article class="panel event" id="ev-${esc(ev.id)}">
-    <header><span class="chip">${esc(WHERE[ev.where] || ev.where)}</span><time>${esc(ev.time)}</time><span class="code">${esc(ev.code)}</span></header>
-    <h4>${esc(ev.title)}</h4>
-    <p>${esc(ev.hint)}</p>
-    ${ev.item ? `<p class="ev-item">${esc(ev.item)}</p>` : ''}
-    ${ev.url ? `<p class="ev-url" dir="ltr">${esc(ev.url)}</p>` : ''}
-    <details><summary>جزئیات فنی</summary><pre>${esc(ev.detail)}</pre></details>
-    <button class="btn small" data-act="copy-event" data-id="${esc(ev.id)}">${ic('copy')}<span>کپی این خطا</span></button>
-  </article>`;
+function renderStats() {
+  const now = Date.now() / 1000;
+  const doneTasks = [...S.tasks.values()].filter(t => t.status === 'done');
+
+  const ranges = [
+    { label: '۱۲ ساعت گذشته', sec: 12 * 3600 },
+    { label: '۲۴ ساعت گذشته', sec: 24 * 3600 },
+    { label: '۱ هفته گذشته', sec: 7 * 86400 },
+    { label: '۱ ماه گذشته', sec: 30 * 86400 },
+    { label: '۱ سال گذشته', sec: 365 * 86400 },
+    { label: 'کل مصرف ثبت‌شده', sec: Infinity }
+  ];
+
+  $('#stats-time-cards').innerHTML = ranges.map(r => {
+    const filtered = doneTasks.filter(t => {
+      const ts = Number(t.completed_at) || Number(t.created_at) || 0;
+      return r.sec === Infinity ? true : (now - ts <= r.sec);
+    });
+    const bytes = filtered.reduce((a, t) => a + (Number(t.size_bytes) || 0), 0);
+    return `
+      <div class="panel stat-card">
+        <span>${r.label}</span>
+        <b>${bytes > 0 ? fmtBytes(bytes) : '0 MB'}</b>
+        <small>${filtered.length} ویدیو تکمیل‌شده</small>
+      </div>`;
+  }).join('');
+
+  const domMap = new Map();
+  for (const t of S.tasks.values()) {
+    let dom = t.domain || 'سایر';
+    if (!domMap.has(dom)) domMap.set(dom, { domain: dom, count: 0, bytes: 0 });
+    const d = domMap.get(dom);
+    d.count += 1;
+    if (t.status === 'done') d.bytes += (Number(t.size_bytes) || 0);
+  }
+  const domList = [...domMap.values()].sort((a, b) => (b.bytes - a.bytes) || (b.count - a.count));
+  const maxBytes = Math.max(1, ...domList.map(d => d.bytes));
+
+  $('#stats-domains').innerHTML = domList.length ? domList.map(d => {
+    const pct = d.bytes > 0 ? Math.max(4, Math.round((d.bytes / maxBytes) * 100)) : 5;
+    return `
+      <div class="domain-row">
+        <div class="domain-top">
+          <b>🌐 ${esc(d.domain)}</b>
+          <span>${d.count} ویدیو — <b>${d.bytes > 0 ? fmtBytes(d.bytes) : '0 MB'}</b></span>
+        </div>
+        <div class="domain-bar"><i style="width:${pct}%"></i></div>
+      </div>`;
+  }).join('') : '<span class="help">هنوز دانلودی ثبت نشده است.</span>';
 }
 
 function renderEvents() {
   $('#events').innerHTML = S.events.length
-    ? [...S.events].reverse().map(eventHTML).join('')
-    : '<div class="panel empty"><span>هنوز خطایی ثبت نشده. اگر مشکلی پیش بیاید، دلیل و راه‌حل آن اینجا نمایش داده می‌شود.</span></div>';
-  updateBadges();
+    ? [...S.events].reverse().map(ev => `
+      <article class="panel event">
+        <header><span class="chip">${esc(ev.where)}</span><time>${esc(ev.time)}</time></header>
+        <h4>${esc(ev.title)}</h4>
+        <p>${esc(ev.hint)}</p>
+        <details><summary>جزئیات فنی</summary><pre>${esc(ev.detail)}</pre></details>
+      </article>`).join('')
+    : '<div class="panel empty"><span>خطایی ثبت نشده است.</span></div>';
 }
 
 eel.expose(error_added);
 function error_added(ev) {
   S.events.push(ev);
   renderEvents();
-  if ($('#view-errors').hidden && ev.where !== 'analyze') toast('خطا ثبت شد: ' + ev.title, 'err');
+  updateHeaderAndBadges();
 }
 
-function updateBadges() {
-  const active = [...S.tasks.values()].filter(t => ['queued', 'downloading', 'merging'].includes(t.status)).length;
-  const cq = $('#cnt-queue'); cq.textContent = active; cq.hidden = active === 0;
-  const unseen = Math.max(0, S.events.length - (S.seenEvents || 0));
-  const ce = $('#cnt-errors'); ce.textContent = unseen; ce.hidden = unseen === 0;
-}
-
-eel.expose(toast_from_py);
-function toast_from_py(msg, kind) { toast(msg, kind || ''); }
-
-/* ======================================================================
-   گزارش برای پشتیبان
-   ====================================================================== */
-async function copyReport() {
-  const text = await py('get_report');
-  if (!text) return;
-  if (await copyText(text)) toast('گزارش کپی شد. آن را همان‌جا بفرستید.', 'ok');
-  else { $('#report-text').value = text; $('#report-dlg').showModal(); $('#report-text').select(); }
-}
-
-/* ======================================================================
-   یک‌جا مدیریت همه‌ی کلیک‌ها
-   ====================================================================== */
 document.addEventListener('click', async e => {
   const tabBtn = e.target.closest('[data-tab]');
   if (tabBtn) { switchTab(tabBtn.dataset.tab); return; }
   const b = e.target.closest('[data-act]');
   if (!b) return;
   const id = b.dataset.id;
+
   switch (b.dataset.act) {
     case 'theme': applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); break;
     case 'paste':
       try { $('#url').value = await navigator.clipboard.readText(); $('#url').focus(); }
-      catch (err) { toast('دسترسی به کلیپ‌بورد ممکن نشد. با Ctrl+V بچسبانید.', 'err'); $('#url').focus(); }
+      catch (err) { toast('با Ctrl+V لینک را بچسبانید', 'err'); }
       break;
     case 'analyze': startAnalyze(); break;
     case 'to-queue': sendToQueue(); break;
-    case 'pick-dir': { const p = await py('pick_directory'); if (p) { $('#path').textContent = p; $('#path').title = p; } break; }
+    case 'pick-dir': { const p = await py('pick_directory'); if (p) $('#path').textContent = p; break; }
+    case 'start-all': {
+      const n = await py('start_all_pending');
+      toast(n ? `${n} دانلود به جریان افتاد` : 'همه دانلودها انجام شده‌اند یا در حال دانلود هستند', 'ok');
+      break;
+    }
+    case 'pause-all': {
+      await py('pause_all_active');
+      toast('دانلودهای فعال متوقف شدند');
+      break;
+    }
+    case 'toggle-collapse-all': {
+      S.allCollapsed = !S.allCollapsed;
+      if (S.allCollapsed) {
+        for (const t of S.tasks.values()) S.collapsedGroups.add(t.group_id || 'default');
+      } else {
+        S.collapsedGroups.clear();
+      }
+      $('#collapse-lbl').textContent = S.allCollapsed ? 'باز کردن همه دسته‌ها' : 'جمع کردن همه (مخفی‌سازی)';
+      saveCollapsedState();
+      renderQueue();
+      break;
+    }
+    case 'toggle-group': {
+      if (e.target.closest('button')) return;
+      if (S.collapsedGroups.has(id)) S.collapsedGroups.delete(id);
+      else S.collapsedGroups.add(id);
+      saveCollapsedState();
+      const card = document.getElementById('grp-' + id);
+      if (card) card.classList.toggle('collapsed');
+      break;
+    }
+    case 'start-group':
+      e.stopPropagation();
+      await py('start_group', id);
+      toast('دانلود این دسته‌بندی شروع شد', 'ok');
+      break;
+    case 'remove-group':
+      e.stopPropagation();
+      await py('remove_group', id);
+      break;
     case 'cancel': py('cancel_task', id); break;
     case 'retry': py('retry_task', id); break;
     case 'remove': py('remove_task', id); break;
     case 'folder': py('show_in_folder', id); break;
-    case 'retry-all': { const n = await py('retry_all_failed'); toast(n ? `${n} دانلود دوباره در صف قرار گرفت` : 'دانلود ناموفقی وجود ندارد'); break; }
     case 'clear-done': py('clear_finished'); break;
-    case 'details': {
-      switchTab('errors');
-      const el = document.getElementById('ev-' + b.dataset.ev);
-      if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); el.querySelector('details').open = true; }
+    case 'copy-report': {
+      const txt = await py('get_report');
+      if (txt) { await navigator.clipboard.writeText(txt); toast('گزارش کپی شد', 'ok'); }
       break;
     }
-    case 'goto-errors': switchTab('errors'); break;
-    case 'copy-report': copyReport(); break;
-    case 'copy-event': {
-      const ev = S.events.find(x => x.id === id);
-      if (ev && await copyText(eventText(ev))) toast('جزئیات خطا کپی شد', 'ok');
-      break;
-    }
-    case 'save-report': { const p = await py('save_report'); if (p) toast('گزارش ذخیره شد: ' + p, 'ok'); break; }
+    case 'save-report': { const p = await py('save_report'); if (p) toast('ذخیره شد: ' + p, 'ok'); break; }
     case 'open-logs': py('open_logs_folder'); break;
-    case 'recheck': S.env = await py('refresh_env') || S.env; renderEnv(); toast('بررسی انجام شد'); break;
-    case 'clear-errors': await py('clear_errors'); S.events = []; S.seenEvents = 0; renderEvents(); break;
-    case 'close-dlg': $('#report-dlg').close(); break;
+    case 'recheck': S.env = await py('refresh_env') || S.env; renderEnv(); break;
+    case 'clear-errors': await py('clear_errors'); S.events = []; renderEvents(); updateHeaderAndBadges(); break;
   }
 });
 
@@ -775,30 +899,30 @@ document.addEventListener('change', e => {
   if (e.target.id === 'check-all') {
     S.selected = e.target.checked ? new Set(S.items.map(i => i.id)) : new Set();
     document.querySelectorAll('.pick').forEach(c => { c.checked = e.target.checked; });
-    updateSelectedCount();
+    updateSelectedInfo();
   } else if (e.target.classList.contains('pick')) {
     e.target.checked ? S.selected.add(e.target.value) : S.selected.delete(e.target.value);
-    updateSelectedCount();
+    updateSelectedInfo();
+  } else if (e.target.id === 'quality') {
+    updateSelectedInfo();
   } else if (e.target.id === 'cookies') {
-    py('set_cookies_browser', e.target.value).then(() => toast('تنظیم کوکی ذخیره شد', 'ok'));
+    py('set_cookies_browser', e.target.value).then(() => toast('کوکی ذخیره شد', 'ok'));
   }
 });
+
 $('#url').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalyze(); });
 
-/* ======================================================================
-   شروع
-   ====================================================================== */
 async function init() {
   applyTheme(document.documentElement.getAttribute('data-theme'));
   let st = null;
-  for (let i = 0; i < 8 && !st; i++) {       // کمی صبر تا اتصال eel برقرار شود
+  for (let i = 0; i < 8 && !st; i++) {
     try { st = await eel.get_initial_state()(); } catch (e) {}
     if (!st) await new Promise(r => setTimeout(r, 400));
   }
-  if (!st) { showNotice('err', 'ارتباط با برنامه برقرار نشد', 'پنجره را ببندید و برنامه را دوباره اجرا کنید. جزئیات در پوشه logs است.'); return; }
-  $('#path').textContent = st.save_path; $('#path').title = st.save_path;
+  if (!st) return;
+  $('#path').textContent = st.save_path;
   $('#cookies').value = st.cookies_browser || '';
-  S.env = st.env; S.events = st.events; S.seenEvents = 0;
+  S.env = st.env; S.events = st.events;
   S.tasks = new Map(st.queue.map(t => [t.id, t]));
   renderEnv(); renderEvents(); renderQueue();
 }

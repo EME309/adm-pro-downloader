@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-ADM Pro Downloader - نسخه ۲.۲ (پشتیبانی از دانلود موزیک MP3، Resume هوشمند، تاریخچه و اکستنشن کروم)
+ADM Pro Downloader - نسخه ۲.۲
+مجهز به دسته‌بندی تاشو، آمار مصرف بازه‌ای، محاسبه حجم تقریبی، شروع انتخابی و نوار وضعیت زنده
 """
 import os
 import sys
@@ -19,6 +20,7 @@ import webbrowser
 import subprocess
 import importlib.util
 import importlib.metadata
+from urllib.parse import urlparse
 from collections import deque, Counter
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
@@ -42,9 +44,6 @@ for _stream in (sys.stdout, sys.stderr):
         pass
 
 
-# ======================================================================
-#  لاگ: هم در فایل، هم در ترمینال، هم در حافظه (برای گزارش)
-# ======================================================================
 class MemoryHandler(logging.Handler):
     def __init__(self, capacity=400):
         super().__init__(level=logging.INFO)
@@ -97,15 +96,11 @@ except Exception:
     log.critical("وارد کردن کتابخانه‌ها شکست خورد:\n%s", traceback.format_exc())
     show_fatal(
         "ADM Pro",
-        "کتابخانه‌های لازم نصب نیستند.\n\nفایل start.bat را اجرا کنید تا نصب شوند.\n"
-        "جزئیات: logs\\app.log",
+        "کتابخانه‌های لازم نصب نیستند.\n\nفایل start.bat را اجرا کنید تا نصب شوند.\nجزئیات: logs\\app.log",
     )
     sys.exit(1)
 
 
-# ======================================================================
-#  تنظیمات
-# ======================================================================
 def _default_save_path():
     downloads = os.path.join(os.path.expanduser("~"), "Downloads")
     return downloads if os.path.isdir(downloads) else BASE_DIR
@@ -136,10 +131,6 @@ def save_config():
 
 config_data = load_config()
 
-
-# ======================================================================
-#  ابزارهای کمکی
-# ======================================================================
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
 
@@ -164,6 +155,54 @@ def fmt_eta(sec):
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
 
 
+def extract_domain(url):
+    try:
+        host = (urlparse(url).hostname or "").lower()
+        if host.startswith("www."):
+            host = host[4:]
+        if "youtu" in host:
+            return "youtube.com"
+        if "phncdn" in host or "pornhub" in host:
+            return "pornhub.com"
+        return host or "سایر"
+    except Exception:
+        return "سایر"
+
+
+def estimate_format_size(info, target_height=None):
+    formats = info.get("formats") or []
+    duration = info.get("duration") or 0
+
+    def f_size(f):
+        s = f.get("filesize") or f.get("filesize_approx")
+        if s:
+            return int(s)
+        tbr = f.get("tbr") or ((f.get("vbr") or 0) + (f.get("abr") or 0))
+        if tbr and duration:
+            return int(tbr * 1000 / 8 * duration)
+        return 0
+
+    v_candidates = [f for f in formats if f.get("vcodec") not in (None, "none")]
+    if target_height:
+        v_candidates = [f for f in v_candidates if (f.get("height") or 0) <= target_height]
+    if not v_candidates:
+        return int(info.get("filesize") or info.get("filesize_approx") or 0)
+
+    v_candidates.sort(key=lambda f: (f.get("height") or 0, f.get("tbr") or 0), reverse=True)
+    best_v = v_candidates[0]
+    v_sz = f_size(best_v)
+
+    if best_v.get("acodec") in (None, "none"):
+        a_candidates = [
+            f for f in formats
+            if f.get("acodec") not in (None, "none") and f.get("vcodec") in (None, "none")
+        ]
+        a_candidates.sort(key=lambda f: (f.get("abr") or f.get("tbr") or 0), reverse=True)
+        a_sz = f_size(a_candidates[0]) if a_candidates else (int(16000 * duration) if duration else 0)
+        return v_sz + a_sz
+    return v_sz
+
+
 def ui(fn_name, *args):
     try:
         getattr(eel, fn_name)(*args)
@@ -171,66 +210,57 @@ def ui(fn_name, *args):
         log.debug("ui call %s failed: %s", fn_name, e)
 
 
-# ======================================================================
-#  دسته‌بندی خطاها
-# ======================================================================
 ERROR_RULES = [
-    ("drm", r"drm|open\.spotify\.com|music\.apple\.com|widevine|encrypted",
-     "این فایل دارای قفل دیجیتال (DRM) است (مانند Spotify یا Apple Music)",
-     "سرویس‌هایی مثل اسپاتیفای دارای رمزنگاری DRM هستند و امکان دانلود مستقیم از سرور آن‌ها وجود ندارد. "
-     "از سایت‌های بدون قفل (مثل SoundCloud، سایت‌های موزیک یا استخراج صدا از ویدیوها) استفاده کنید."),
     ("bot", r"sign in to confirm|not a bot|confirm you.?re not",
      "سایت درخواست تأیید هویت (ضدربات) داده است",
-     "در «تنظیمات پیشرفته» مرورگری را که در آن وارد حساب شده‌اید برای کوکی انتخاب کنید "
-     "(Firefox پایدارتر است). اگر VPN روشن است، خاموش یا عوض کنید."),
+     "در «تنظیمات پیشرفته» مرورگری را که در آن وارد حساب شده‌اید برای کوکی انتخاب کنید (Firefox پایدارتر است)."),
     ("age", r"age.?restrict|confirm your age|inappropriate for some users",
-     "ویدیو/فایل محدودیت سنی دارد",
+     "ویدیو محدودیت سنی دارد",
      "کوکی مرورگری که در آن وارد حساب شده‌اید را در «تنظیمات پیشرفته» انتخاب کنید."),
     ("private", r"private video|members.?only|join this channel|this video is private|login required|"
                 r"requires login|sign in to view|please sign in",
-     "فایل خصوصی است یا نیاز به ورود به حساب کاربری دارد",
-     "فقط با حسابی که دسترسی دارد قابل دانلود است. کوکی مرورگر را در «تنظیمات پیشرفته» فعال کنید."),
+     "ویدیو خصوصی است یا فقط برای اعضا قابل مشاهده است",
+     "فقط با حسابی که دسترسی دارد قابل دانلود است. کوکی مرورگر را فعال کنید."),
     ("geo", r"not available in your country|geo.?restrict|blocked it in your country|georestrict",
-     "این محتوا در کشور شما در دسترس نیست",
+     "این ویدیو در کشور شما در دسترس نیست",
      "با VPN به کشور دیگری وصل شوید و دوباره امتحان کنید."),
     ("unavailable", r"video unavailable|this video is (unavailable|no longer available)|has been removed|"
                     r"account associated .{0,60}terminated|video (was )?deleted",
-     "محتوا حذف شده یا دیگر در دسترس نیست",
+     "ویدیو حذف شده یا دیگر در دسترس نیست",
      "لینک را در مرورگر باز کنید و مطمئن شوید هنوز وجود دارد."),
     ("unsupported", r"unsupported url|no suitable extractor|not a valid url",
      "این لینک پشتیبانی نمی‌شود یا نامعتبر است",
-     "لینک کامل صفحه یا فایل صوتی/تصویری را (با https://) وارد کنید."),
+     "لینک کامل صفحه‌ی ویدیو را (با https://) وارد کنید."),
     ("rate", r"http error 429|too many requests",
      "سایت به‌خاطر درخواست‌های زیاد موقتاً دسترسی را بسته است (429)",
      "چند دقیقه صبر کنید یا با VPN/IP دیگری امتحان کنید."),
     ("forbidden", r"http error 403|forbidden",
      "سرور دسترسی را رد کرد (403)",
-     "start.bat را اجرا کنید تا yt-dlp بروز شود، مطمئن شوید Deno نصب است، "
-     "یا کوکی مرورگر را در «تنظیمات پیشرفته» فعال کنید."),
+     "start.bat را اجرا کنید تا yt-dlp بروز شود، یا کوکی مرورگر را فعال کنید."),
     ("disk", r"no space left|permission denied|winerror 5|access is denied|errno 13|errno 28|"
              r"file name too long|errno 22|invalid argument",
      "نوشتن فایل در مسیر ذخیره ممکن نیست",
-     "مسیر ذخیره را عوض کنید و از آزاد بودن فضای دیسک و دسترسی نوشتن مطمئن شوید."),
+     "مسیر ذخیره را عوض کنید و از آزاد بودن فضای دیسک مطمئن شوید."),
     ("network", r"getaddrinfo failed|name resolution|timed out|timeout|connection (reset|refused|aborted)|"
                 r"network is unreachable|unable to download (webpage|json|api)|ssl error|"
                 r"certificate verify|proxy|remote end closed|incompleteread|temporary failure",
      "ارتباط با اینترنت یا سرور برقرار نشد",
-     "اتصال اینترنت و VPN را بررسی کنید و دوباره امتحان کنید (فایل تا همین‌جا ذخیره شده و از ادامه دانلود می‌شود)."),
+     "اتصال اینترنت و VPN را بررسی کنید و دوباره امتحان کنید (ادامه دانلود از فایل .part انجام می‌شود)."),
     ("ffmpeg", r"ffmpeg.{0,40}(not (found|installed)|is not)|ffprobe.{0,40}not|you have requested merging|"
-               r"ffmpeg not found|audio conversion",
-     "ابزار ffmpeg پیدا نشد (برای تبدیل به MP3 یا ادغام تصویر و صدا لازم است)",
+               r"ffmpeg not found",
+     "ابزار ffmpeg پیدا نشد",
      "start.bat را یک‌بار دیگر اجرا کنید تا ffmpeg نصب شود."),
     ("js", r"javascript runtime|js runtime|n challenge|nsig|signature (solving|extraction)|"
            r"challenge solving|yt-dlp-ejs",
-     "موتور جاوااسکریپت (Deno) لازم است و پیدا نشد",
-     "Deno را نصب کنید (دستور: winget install DenoLand.Deno یا اجرای start.bat) و برنامه را دوباره باز کنید."),
+     "موتور جاوااسکریپت (Deno) پیدا نشد",
+     "Deno را نصب کنید (winget install DenoLand.Deno) و برنامه را دوباره باز کنید."),
     ("format", r"requested format is not available|no video formats found|only images are available|no formats",
      "کیفیت یا فرمت درخواستی موجود نیست",
-     "کیفیت را روی «بهترین» یا «فقط صدا» بگذارید."),
+     "کیفیت را روی «بهترین» بگذارید."),
 ]
 _COMPILED_RULES = [(c, re.compile(p, re.I | re.S), t, h) for c, p, t, h in ERROR_RULES]
 UNKNOWN_ERROR = ("unknown", "خطای ناشناخته",
-                 "دکمه «گزارش برای پشتیبان» را بزنید و متن کپی‌شده را بفرستید تا بررسی شود.")
+                 "دکمه «گزارش برای پشتیبان» را بزنید و متن کپی‌شده را بفرستید.")
 
 
 def classify(text):
@@ -247,7 +277,7 @@ events_lock = threading.Lock()
 
 def record_event(where, raw, url="", item="", extra="", tb=""):
     raw = clean(raw)
-    cls = classify(raw + "\n" + (url or "") + "\n" + (extra or ""))
+    cls = classify(raw + "\n" + (extra or ""))
     detail = raw
     if tb:
         detail += "\n\n" + tb.strip()
@@ -296,10 +326,6 @@ def _excepthook(exc_type, exc, tb):
 sys.excepthook = _excepthook
 threading.excepthook = lambda a: _excepthook(a.exc_type, a.exc_value, a.exc_traceback)
 
-
-# ======================================================================
-#  بررسی محیط: ffmpeg ، JS runtime ، نسخه‌ها
-# ======================================================================
 _ffmpeg_info = None
 
 
@@ -330,7 +356,6 @@ def get_ffmpeg():
         except Exception as e:
             log.warning("ffmpeg پیدا یا آماده نشد: %s", e)
     _ffmpeg_info = info
-    log.info("ffmpeg: %s", info["path"] or "یافت نشد")
     return info
 
 
@@ -369,40 +394,35 @@ def check_save_path(path):
 
 def get_env_checks():
     checks = []
-
     ff = get_ffmpeg()
     checks.append({
         "key": "ffmpeg", "label": "ffmpeg", "ok": ff["available"],
         "value": ff["path"] or "پیدا نشد",
-        "impact": "بدون ffmpeg تبدیل به MP3 و ادغام تصویر و صدا انجام نمی‌شود.",
+        "impact": "بدون ffmpeg تصویر و صدا ادغام نمی‌شوند.",
         "fix": "start.bat را دوباره اجرا کنید.",
     })
-
     js_name, js_path = find_js_runtime()
     checks.append({
         "key": "js", "label": "موتور جاوااسکریپت (Deno/Node)", "ok": bool(js_name),
         "value": f"{js_name}: {js_path}" if js_name else "پیدا نشد",
-        "impact": "دانلود از برخی سایت‌ها ممکن است با خطای 403 شکست بخورد.",
-        "fix": "Deno را نصب کنید (winget install DenoLand.Deno) و برنامه را دوباره باز کنید.",
+        "impact": "دانلود از یوتیوب ممکن است با خطا مواجه شود.",
+        "fix": "Deno را نصب کنید (winget install DenoLand.Deno).",
     })
-
     has_ejs = importlib.util.find_spec("yt_dlp_ejs") is not None
     checks.append({
         "key": "ejs", "label": "yt-dlp-ejs", "ok": has_ejs,
         "value": "نصب است" if has_ejs else "نصب نیست",
-        "impact": "جزء حل چالش استخراج نصب نیست.",
-        "fix": "start.bat را اجرا کنید (yt-dlp[default] را نصب می‌کند).",
+        "impact": "جزء حل چالش یوتیوب نصب نیست.",
+        "fix": "start.bat را اجرا کنید.",
     })
-
     age = ytdlp_age_days()
     old = age is not None and age > 60
     checks.append({
         "key": "ytdlp", "label": "yt-dlp", "ok": not old,
         "value": YTDLP_VERSION + (f" ({age} روز پیش)" if age is not None else ""),
-        "impact": "نسخه‌ی yt-dlp قدیمی است و سایت‌ها ممکن است کار نکنند.",
+        "impact": "نسخه‌ی yt-dlp قدیمی است.",
         "fix": "start.bat را اجرا کنید تا بروزرسانی شود.",
     })
-
     ok, why = check_save_path(config_data.get("save_path", BASE_DIR))
     checks.append({
         "key": "path", "label": "مسیر ذخیره", "ok": ok,
@@ -413,9 +433,6 @@ def get_env_checks():
     return checks
 
 
-# ======================================================================
-#  گزارش برای پشتیبان
-# ======================================================================
 def build_report():
     L = []
     add = L.append
@@ -423,49 +440,20 @@ def build_report():
     add(f"ADM Pro {APP_VERSION} - گزارش پشتیبانی")
     add(f"زمان: {datetime.now():%Y-%m-%d %H:%M:%S}")
     add("=" * 60)
-
-    add("\n[محیط]")
     add(f"OS: {platform.system()} {platform.release()} ({platform.version()})")
-    add(f"Python: {sys.version.split()[0]} ({sys.executable})")
-    add(f"yt-dlp: {YTDLP_VERSION}")
-    try:
-        add(f"eel: {importlib.metadata.version('eel')}")
-    except Exception:
-        pass
+    add(f"Python: {sys.version.split()[0]} | yt-dlp: {YTDLP_VERSION}")
     for c in get_env_checks():
         add(f"{'OK ' if c['ok'] else 'BAD'} {c['label']}: {c['value']}")
-    add(f"cookies_browser: {config_data.get('cookies_browser') or '(none)'}")
-
     with queue_lock:
         counts = Counter(t["status"] for t in download_queue)
-        failed = [t for t in download_queue if t["status"] == "error"][-3:]
-    add("\n[صف دانلود]")
-    add(", ".join(f"{k}={v}" for k, v in counts.items()) or "(خالی)")
-
+    add("\n[صف دانلود] " + (", ".join(f"{k}={v}" for k, v in counts.items()) or "(خالی)"))
     with events_lock:
         events = list(error_events)[-8:]
-    add(f"\n[آخرین خطاها: {len(events)}]")
-    if not events:
-        add("(خطایی ثبت نشده)")
     for ev in events:
-        add(f"--- {ev['time']} | {ev['where']} | {ev['code']} | {ev['title']}")
-        if ev["url"]:
-            add(f"URL: {ev['url']}")
-        add(ev["detail"][:1800])
-
-    for t in failed:
-        add(f"\n[لاگ دانلودِ ناموفق: {t['title'][:60]}]")
-        add(f"URL: {t['url']}  quality={t['quality']}")
-        add("\n".join(list(t.get("_log", []))[-40:]))
-
-    add("\n[آخرین پیام‌های برنامه]")
-    add("\n".join(list(memlog.buffer)[-60:]))
+        add(f"--- {ev['time']} | {ev['where']} | {ev['code']} | {ev['title']}\n{ev['detail'][:1500]}")
     return "\n".join(L)
 
 
-# ======================================================================
-#  لاگر yt-dlp
-# ======================================================================
 class TaskLogger:
     def __init__(self, tag, keep=120):
         self.tag = tag
@@ -478,19 +466,14 @@ class TaskLogger:
         return msg
 
     def debug(self, msg):
-        msg = self._store("D", msg)
-        if msg.startswith("[debug]"):
-            log.debug("[%s] %s", self.tag, msg)
-        else:
-            log.info("[%s] %s", self.tag, msg)
+        self._store("D", msg)
 
     def info(self, msg):
-        log.info("[%s] %s", self.tag, self._store("I", msg))
+        self._store("I", msg)
 
     def warning(self, msg):
         msg = self._store("W", msg)
         self.warnings.append(msg)
-        log.warning("[%s] %s", self.tag, msg)
 
     def error(self, msg):
         log.error("[%s] %s", self.tag, self._store("E", msg))
@@ -513,9 +496,6 @@ def common_ydl_opts(logger):
     return opts
 
 
-# ======================================================================
-#  تحلیل لینک
-# ======================================================================
 def extract_url(text):
     text = (text or "").strip()
     m = re.search(r"https?://[^\s\"'<>]+", text)
@@ -553,7 +533,7 @@ def analyze_worker(raw_text):
     tlog = TaskLogger("analyze")
     url = extract_url(raw_text)
     if not url:
-        ev = record_event("analyze", f"Unsupported URL (not a link): {clean(raw_text)[:200]}", url=raw_text)
+        ev = record_event("analyze", f"Unsupported URL: {clean(raw_text)[:200]}", url=raw_text)
         ui("analysis_error", ev)
         return
     opts = common_ydl_opts(tlog)
@@ -571,30 +551,44 @@ def analyze_worker(raw_text):
                 if not u or u in seen:
                     continue
                 seen.add(u)
+                dur = e.get("duration")
+                sz = e.get("filesize") or e.get("filesize_approx") or 0
+                if not sz and dur:
+                    sz = int(dur * 220 * 1024)
                 items.append({
                     "id": uuid.uuid4().hex[:12],
-                    "title": e.get("title") or "فایل ناشناس",
+                    "title": e.get("title") or "ویدیوی ناشناس",
                     "url": u,
-                    "duration": e.get("duration"),
+                    "duration": dur,
+                    "size_bytes": int(sz),
                 })
             if not items:
                 raise RuntimeError("Unsupported URL: no playable entries found in this playlist")
-            ui("render_analysis", {"type": "playlist", "title": info.get("title") or "پلی‌لیست ناشناس",
-                                   "items": items})
+            ui("render_analysis", {
+                "type": "playlist",
+                "title": info.get("title") or "پلی‌لیست دانلودی",
+                "items": items
+            })
         else:
             heights = sorted(
                 {f["height"] for f in info.get("formats") or []
                  if f.get("height") and f.get("vcodec") not in (None, "none")},
                 reverse=True,
             )
+            size_map = {"best": estimate_format_size(info, None)}
+            for h in heights:
+                size_map[f"{h}p"] = estimate_format_size(info, h)
+
             ui("render_analysis", {
                 "type": "single",
-                "title": info.get("title") or "فایل دانلودی",
+                "title": info.get("title") or "ویدیوی ناشناس",
                 "url": info.get("webpage_url") or url,
                 "thumb": info.get("thumbnail") or "",
                 "duration": info.get("duration"),
                 "uploader": info.get("uploader") or info.get("channel") or "",
                 "heights": heights,
+                "size_map": size_map,
+                "size_bytes": size_map.get("best", 0),
             })
     except Exception as e:
         tb = "" if isinstance(e, yt_dlp.utils.DownloadError) else traceback.format_exc()
@@ -608,12 +602,10 @@ def analyze_url(url):
     threading.Thread(target=analyze_worker, args=(url,), daemon=True, name="analyze").start()
 
 
-# ======================================================================
-#  صف دانلود، تاریخچه دائمی (Persistence) و ادامه دانلود (Resume)
-# ======================================================================
 download_queue = []
 queue_lock = threading.RLock()
 worker_running = False
+probe_running = False
 _last_disk_save = 0.0
 
 
@@ -642,6 +634,15 @@ def save_queue_state(force=False):
         log.debug("خطا در ذخیره‌ی تاریخچه صف: %s", e)
 
 
+def _infer_legacy_group(item):
+    if item.get("group_title"):
+        return item.get("group_id") or "legacy", item["group_title"]
+    save_dir = item.get("save_dir") or ""
+    folder_name = os.path.basename(os.path.normpath(save_dir)) if save_dir else "عمومی"
+    gid = "dir_" + re.sub(r"\W+", "_", folder_name.lower())[:16]
+    return gid, f"پوشه: {folder_name}"
+
+
 def load_queue_state():
     if not os.path.isfile(QUEUE_FILE):
         return
@@ -658,6 +659,24 @@ def load_queue_state():
                 st = item.get("status", "queued")
                 if st in ("downloading", "merging"):
                     st = "cancelled"
+                fpath = item.get("file") or ""
+                sz = int(item.get("size_bytes") or 0)
+                done_at = float(item.get("completed_at") or 0)
+                created_at = float(item.get("created_at") or 0)
+
+                if fpath and os.path.isfile(fpath):
+                    try:
+                        stat = os.stat(fpath)
+                        if sz <= 0:
+                            sz = stat.st_size
+                        if done_at <= 0:
+                            done_at = stat.st_mtime
+                    except Exception:
+                        pass
+                if created_at <= 0:
+                    created_at = done_at if done_at > 0 else time.time()
+
+                gid, gtitle = _infer_legacy_group(item)
                 download_queue.append({
                     "id": item.get("id") or uuid.uuid4().hex[:12],
                     "title": item.get("title") or item["url"],
@@ -666,13 +685,21 @@ def load_queue_state():
                     "status": st,
                     "progress": float(item.get("progress") or 0.0),
                     "speed": "",
+                    "speed_bps": 0,
                     "eta": "",
                     "error": item.get("error"),
-                    "file": item.get("file") or "",
+                    "file": fpath,
                     "save_dir": item.get("save_dir") or config_data.get("save_path", BASE_DIR),
                     "attempts": int(item.get("attempts") or 0),
+                    "group_id": gid,
+                    "group_title": gtitle,
+                    "size_bytes": sz,
+                    "downloaded_bytes": sz if st == "done" else int(item.get("downloaded_bytes") or 0),
+                    "created_at": created_at,
+                    "completed_at": done_at,
+                    "domain": item.get("domain") or extract_domain(item["url"]),
                 })
-        log.info("تاریخچه صف دانلود بازیابی شد (%d مورد)", len(download_queue))
+        save_queue_state(force=True)
     except Exception:
         log.exception("خواندن فایل تاریخچه صف با خطا مواجه شد")
 
@@ -699,20 +726,16 @@ def find_task(task_id):
 
 
 def build_format(quality, has_ffmpeg, fallback=False):
-    """پشتیبانی همزمان از ویدیو و فایل‌های صوتی (موزیک)"""
-    if quality == "audio":
-        return "ba/b"
     if quality == "best":
-        # اگر لینک مربوط به سایت موزیک باشد که ویدیو ندارد، خودکار بهترین صدا (ba) را می‌گیرد
-        return "b/ba" if (fallback or not has_ffmpeg) else "bv*+ba/b/ba"
+        return "b" if (fallback or not has_ffmpeg) else "bv*+ba/b"
     h = quality
     if fallback or not has_ffmpeg:
-        return f"b[height<={h}]/b/ba"
-    return f"bv*[height<={h}]+ba/b[height<={h}]/b/ba"
+        return f"b[height<={h}]/b"
+    return f"bv*[height<={h}]+ba/b[height<={h}]/b"
 
 
 def make_progress_hook(task):
-    state = {"finished": 0}
+    state = {"finished": 0, "stream_sizes": {}}
 
     def hook(d):
         if task.get("_cancel"):
@@ -734,8 +757,15 @@ def make_progress_hook(task):
 
         status = d.get("status")
         if status == "downloading":
-            total = d.get("total_bytes") or d.get("total_bytes_estimate")
+            total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
             done = d.get("downloaded_bytes") or 0
+            f_id = str(info.get("format_id") or state["finished"])
+            if total > 0:
+                state["stream_sizes"][f_id] = total
+                sum_total = sum(state["stream_sizes"].values())
+                if sum_total > (task.get("size_bytes") or 0):
+                    task["size_bytes"] = int(sum_total)
+
             if total:
                 frac = done / total
             elif d.get("fragment_count"):
@@ -746,13 +776,19 @@ def make_progress_hook(task):
             new_prog = round((state["finished"] + frac) / streams * 100, 1)
             if new_prog >= task.get("progress", 0.0) or frac > 0.02:
                 task["progress"] = new_prog
-            task["speed"] = fmt_speed(d.get("speed"))
+
+            spd = d.get("speed") or 0
+            task["speed_bps"] = int(spd)
+            task["speed"] = fmt_speed(spd)
             task["eta"] = fmt_eta(d.get("eta"))
+            task["downloaded_bytes"] = int(done)
             task["status"] = "downloading"
             push_task(task)
         elif status == "finished":
             state["finished"] += 1
             task["progress"] = round(min(state["finished"] / streams, 1.0) * 100, 1)
+            task["speed_bps"] = 0
+            task["speed"] = ""
             push_task(task, force=True)
     return hook
 
@@ -760,7 +796,7 @@ def make_progress_hook(task):
 def make_pp_hook(task):
     def hook(d):
         if d.get("status") == "started":
-            task.update(status="merging", speed="", eta="")
+            task.update(status="merging", speed="", speed_bps=0, eta="")
             push_task(task, force=True)
     return hook
 
@@ -768,17 +804,11 @@ def make_pp_hook(task):
 def build_download_opts(task, tlog, fmt, ffmpeg):
     save_path = task.get("save_dir") or config_data.get("save_path", BASE_DIR)
     task["save_dir"] = save_path
-    is_audio = (task.get("quality") == "audio")
-
-    if is_audio:
-        out_template = os.path.join(save_path, "%(title).100s.%(ext)s")
-    else:
-        out_template = os.path.join(save_path, "%(title).100s_%(resolution)s.%(ext)s")
-
     opts = common_ydl_opts(tlog)
     opts.update({
-        "outtmpl": out_template,
+        "outtmpl": os.path.join(save_path, "%(title).100s_%(resolution)s.%(ext)s"),
         "format": fmt,
+        "merge_output_format": "mp4/mkv",
         "noplaylist": True,
         "windowsfilenames": True,
         "continuedl": True,
@@ -791,16 +821,6 @@ def build_download_opts(task, tlog, fmt, ffmpeg):
         "postprocessor_hooks": [make_pp_hook(task)],
         "post_hooks": [lambda filename: task.__setitem__("file", filename)],
     })
-
-    if is_audio and ffmpeg["available"]:
-        opts["postprocessors"] = [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "320",
-        }]
-    elif not is_audio:
-        opts["merge_output_format"] = "mp4/mkv"
-
     if ffmpeg["location"]:
         opts["ffmpeg_location"] = ffmpeg["location"]
     return opts
@@ -811,7 +831,7 @@ def fail_task(task, raw, tlog=None, tb=""):
         "download", raw, url=task["url"], item=task["title"],
         extra="\n".join(tlog.warnings[-6:]) if tlog else "", tb=tb,
     )
-    task.update(status="error", speed="", eta="",
+    task.update(status="error", speed="", speed_bps=0, eta="",
                 error={"title": ev["title"], "hint": ev["hint"], "code": ev["code"], "event": ev["id"]})
     push_task(task, force=True)
 
@@ -822,14 +842,12 @@ def run_task(task):
     prev_progress = float(task.get("progress") or 0.0)
     if prev_progress >= 100.0:
         prev_progress = 0.0
-    task.update(status="downloading", progress=prev_progress, speed="", eta="", error=None)
+    task.update(status="downloading", progress=prev_progress, speed="", speed_bps=0, eta="", error=None)
     task["attempts"] = task.get("attempts", 0) + 1
     push_task(task, force=True)
 
     target_dir = task.get("save_dir") or config_data.get("save_path", BASE_DIR)
     task["save_dir"] = target_dir
-    log.info("شروع/ادامه دانلود: %s | %s | quality=%s | dir=%s",
-             task["title"], task["url"], task["quality"], target_dir)
 
     ok, why = check_save_path(target_dir)
     if not ok:
@@ -840,24 +858,31 @@ def run_task(task):
     use_fallback = False
     for attempt in (1, 2):
         fmt = build_format(task["quality"], ffmpeg["available"], fallback=use_fallback)
-        log.info("[%s] format=%s (attempt %d)", tlog.tag, fmt, attempt)
         try:
             with yt_dlp.YoutubeDL(build_download_opts(task, tlog, fmt, ffmpeg)) as ydl:
                 ydl.download([task["url"]])
-            task.update(status="done", progress=100.0, speed="", eta="")
+
+            fpath = task.get("file") or ""
+            if fpath and os.path.isfile(fpath):
+                try:
+                    actual_sz = os.path.getsize(fpath)
+                    if actual_sz > 0:
+                        task["size_bytes"] = actual_sz
+                        task["downloaded_bytes"] = actual_sz
+                except Exception:
+                    pass
+            task.update(status="done", progress=100.0, speed="", speed_bps=0, eta="", completed_at=time.time())
             push_task(task, force=True)
-            log.info("دانلود کامل شد: %s", task.get("file") or task["title"])
             return
         except Exception as e:
             if task.get("_cancel") or isinstance(e, UserCancelled):
-                task.update(status="cancelled", speed="", eta="")
+                new_st = task.get("_cancel_target") or "cancelled"
+                task.update(status=new_st, speed="", speed_bps=0, eta="")
                 push_task(task, force=True)
-                log.info("دانلود متوقف شد (فایل .part نگهداری شد): %s", task["title"])
                 return
             raw = f"{type(e).__name__}: {e}"
             cls = classify(clean(e) + "\n" + "\n".join(tlog.warnings))
             if attempt == 1 and cls["code"] in ("format", "ffmpeg") and not use_fallback:
-                log.warning("[%s] خطای %s؛ تلاش دوباره با فرمت ساده‌تر", tlog.tag, cls["code"])
                 use_fallback = True
                 continue
             tb = "" if isinstance(e, yt_dlp.utils.DownloadError) else traceback.format_exc()
@@ -881,7 +906,6 @@ def download_worker():
     except BaseException:
         with queue_lock:
             worker_running = False
-        log.critical("نخ دانلود متوقف شد:\n%s", traceback.format_exc())
         raise
 
 
@@ -894,66 +918,168 @@ def ensure_worker():
     threading.Thread(target=download_worker, daemon=True, name="download-worker").start()
 
 
-def parse_quality(quality_str):
-    q = str(quality_str or "").strip().lower()
-    if any(k in q for k in ("audio", "mp3", "music", "صدا", "موزیک", "صوتی")):
-        return "audio"
-    m = re.search(r"(\d+)p", q)
-    return m.group(1) if m else "best"
+def size_probe_worker():
+    global probe_running
+    try:
+        while True:
+            with queue_lock:
+                target = next(
+                    (t for t in download_queue
+                     if t.get("size_bytes", 0) <= 0 and not t.get("_probed") and t["status"] in ("paused", "queued")),
+                    None
+                )
+                if not target:
+                    probe_running = False
+                    return
+                target["_probed"] = True
+
+            tlog = TaskLogger("probe", keep=20)
+            opts = common_ydl_opts(tlog)
+            opts.update({"noplaylist": True, "socket_timeout": 20})
+            try:
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    info = ydl.extract_info(target["url"], download=False)
+                if info:
+                    q = target.get("quality", "best")
+                    h = int(q) if str(q).isdigit() else None
+                    est = estimate_format_size(info, h)
+                    if est > 0:
+                        target["size_bytes"] = est
+                        push_task(target, force=True)
+            except Exception:
+                pass
+    finally:
+        probe_running = False
+
+
+def ensure_probe():
+    global probe_running
+    with queue_lock:
+        if probe_running:
+            return
+        probe_running = True
+    threading.Thread(target=size_probe_worker, daemon=True, name="size-probe").start()
 
 
 @api
-def add_to_queue(items, quality_str):
-    quality = parse_quality(quality_str)
+def add_to_queue(items, quality_str, start_now=True, group_title=""):
+    m = re.search(r"(\d+)p", quality_str or "")
+    quality = m.group(1) if m else "best"
+    init_status = "queued" if start_now else "paused"
     added = 0
     current_save_dir = config_data.get("save_path", BASE_DIR)
+
+    items = items or []
+    now_str = datetime.now().strftime("%Y/%m/%d - %H:%M")
+    if not group_title:
+        if len(items) == 1:
+            group_title = f"دانلود تکی ({now_str})"
+        else:
+            group_title = f"لیست دانلود ({len(items)} ویدیو - {now_str})"
+    group_id = "grp_" + uuid.uuid4().hex[:8]
+
     with queue_lock:
         existing_ids = {t["id"] for t in download_queue}
-        for item in items or []:
+        for item in items:
             url = item.get("url")
             if not url:
                 continue
-            # اگر خود لینک مستقیماً فایل صوتی باشد، به صورت خودکار حالت audio را فعال کن
-            item_q = "audio" if re.search(r"\.(mp3|m4a|flac|wav|ogg|aac)(\?|$)", url, re.I) else quality
-
             resumable = next(
                 (t for t in download_queue
-                 if t["url"] == url and t["quality"] == item_q and t["status"] in ("error", "cancelled")),
+                 if t["url"] == url and t["quality"] == quality and t["status"] in ("error", "cancelled", "paused")),
                 None,
             )
             if resumable:
-                resumable.update(status="queued", speed="", eta="", error=None, _cancel=False)
+                resumable.update(status=init_status, speed="", speed_bps=0, eta="", error=None, _cancel=False)
                 added += 1
                 continue
 
-            if any(t["url"] == url and t["quality"] == item_q and t["status"] in ("queued", "downloading", "merging")
-                   for t in download_queue):
+            if any(t["url"] == url and t["status"] in ("queued", "downloading", "merging") for t in download_queue):
                 continue
 
             task_id = item.get("id") or uuid.uuid4().hex[:12]
             if task_id in existing_ids:
                 task_id = uuid.uuid4().hex[:12]
-            title_prefix = "🎵 " if item_q == "audio" and not str(item.get("title", "")).startswith("🎵") else ""
             download_queue.append({
                 "id": task_id,
-                "title": title_prefix + (item.get("title") or url),
+                "title": item.get("title") or url,
                 "url": url,
-                "quality": item_q,
-                "status": "queued",
+                "quality": quality,
+                "status": init_status,
                 "progress": 0.0,
                 "speed": "",
+                "speed_bps": 0,
                 "eta": "",
                 "error": None,
                 "file": "",
                 "save_dir": current_save_dir,
                 "attempts": 0,
+                "group_id": group_id,
+                "group_title": group_title,
+                "size_bytes": int(item.get("size_bytes") or 0),
+                "downloaded_bytes": 0,
+                "created_at": time.time(),
+                "completed_at": 0,
+                "domain": extract_domain(url),
             })
             existing_ids.add(task_id)
             added += 1
     push_queue()
-    if added:
+    ensure_probe()
+    if added and start_now:
         ensure_worker()
     return added
+
+
+@api
+def start_all_pending():
+    with queue_lock:
+        pending = [t for t in download_queue if t["status"] in ("paused", "cancelled", "error")]
+        for t in pending:
+            t.update(status="queued", speed="", speed_bps=0, eta="", error=None, _cancel=False)
+        has_queued = any(t["status"] == "queued" for t in download_queue)
+    push_queue()
+    if has_queued:
+        ensure_worker()
+    return len(pending)
+
+
+@api
+def pause_all_active():
+    with queue_lock:
+        count = 0
+        for t in download_queue:
+            if t["status"] == "queued":
+                t["status"] = "paused"
+                count += 1
+            elif t["status"] in ("downloading", "merging"):
+                t["_cancel"] = True
+                t["_cancel_target"] = "paused"
+                count += 1
+    push_queue()
+    return count
+
+
+@api
+def start_group(group_id):
+    with queue_lock:
+        targets = [t for t in download_queue if t.get("group_id") == group_id and t["status"] in ("paused", "cancelled", "error")]
+        for t in targets:
+            t.update(status="queued", speed="", speed_bps=0, eta="", error=None, _cancel=False)
+    push_queue()
+    if targets:
+        ensure_worker()
+    return len(targets)
+
+
+@api
+def remove_group(group_id):
+    with queue_lock:
+        download_queue[:] = [
+            t for t in download_queue
+            if not (t.get("group_id") == group_id and t["status"] not in ("downloading", "merging"))
+        ]
+    push_queue()
 
 
 @api
@@ -962,30 +1088,24 @@ def cancel_task(task_id):
     if not t:
         return
     t["_cancel"] = True
+    t["_cancel_target"] = "paused"
     if t["status"] == "queued":
-        t["status"] = "cancelled"
+        t["status"] = "paused"
     push_task(t, force=True)
 
 
 @api
 def retry_task(task_id):
     t = find_task(task_id)
-    if t and t["status"] in ("error", "cancelled"):
-        t.update(status="queued", speed="", eta="", error=None, _cancel=False)
+    if t and t["status"] in ("error", "cancelled", "paused"):
+        t.update(status="queued", speed="", speed_bps=0, eta="", error=None, _cancel=False)
         push_task(t, force=True)
         ensure_worker()
 
 
 @api
 def retry_all_failed():
-    with queue_lock:
-        failed = [t for t in download_queue if t["status"] in ("error", "cancelled")]
-    for t in failed:
-        t.update(status="queued", speed="", eta="", error=None, _cancel=False)
-    push_queue()
-    if failed:
-        ensure_worker()
-    return len(failed)
+    return start_all_pending()
 
 
 @api
@@ -1030,9 +1150,6 @@ def show_in_folder(task_id):
         _open_path(config_data.get("save_path", BASE_DIR), select=False)
 
 
-# ======================================================================
-#  تنظیمات و ابزارهای رابط
-# ======================================================================
 @api
 def get_initial_state():
     with queue_lock:
@@ -1079,7 +1196,6 @@ def set_cookies_browser(name):
     name = name if name in ALLOWED_BROWSERS else ""
     config_data["cookies_browser"] = name
     save_config()
-    log.info("cookies_browser = %s", name or "(none)")
     return name
 
 
@@ -1112,9 +1228,6 @@ def log_js_error(message, stack=""):
     record_event("js", clean(message), tb=clean(stack))
 
 
-# ======================================================================
-#  پل ارتباطی با اکستنشن کروم (Local HTTP Server)
-# ======================================================================
 class ExtensionHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
@@ -1151,16 +1264,15 @@ class ExtensionHandler(BaseHTTPRequestHandler):
                 title = (data.get("title") or url).strip()
                 action = data.get("action", "download")
                 quality = data.get("quality", "best")
+                start_now = bool(data.get("start_now", True))
 
                 if not url:
                     raise ValueError("URL خالی است")
 
-                log.info("درخواست از اکستنشن کروم دریافت شد: action=%s | quality=%s | url=%s", action, quality, url)
-
                 if action == "analyze":
                     analyze_url(url)
                 else:
-                    add_to_queue([{"url": url, "title": title}], quality)
+                    add_to_queue([{"url": url, "title": title}], quality, start_now, "اکستنشن کروم")
 
                 self.send_response(200)
                 self._send_cors_headers()
@@ -1168,7 +1280,6 @@ class ExtensionHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": True}).encode("utf-8"))
             except Exception as e:
-                log.error("خطا در دریافت لینک از اکستنشن: %s", e)
                 self.send_response(400)
                 self._send_cors_headers()
                 self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1180,14 +1291,10 @@ def start_extension_server():
     try:
         server = HTTPServer(("127.0.0.1", EXTENSION_PORT), ExtensionHandler)
         threading.Thread(target=server.serve_forever, daemon=True, name="ext-server").start()
-        log.info("سرور اکستنشن کروم روی پورت %d فعال شد", EXTENSION_PORT)
     except Exception as e:
-        log.warning("پورت اکستنشن (%d) درگیر است یا فعال نشد: %s", EXTENSION_PORT, e)
+        log.warning("پورت اکستنشن (%d) فعال نشد: %s", EXTENSION_PORT, e)
 
 
-# ======================================================================
-#  اجرای برنامه
-# ======================================================================
 def free_port():
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
@@ -1197,36 +1304,30 @@ def free_port():
 
 
 def main():
-    log.info("=== ADM Pro %s | yt-dlp %s | Python %s | %s ===",
-             APP_VERSION, YTDLP_VERSION, sys.version.split()[0], platform.platform())
+    log.info("=== ADM Pro %s | yt-dlp %s ===", APP_VERSION, YTDLP_VERSION)
     get_ffmpeg()
     load_queue_state()
     if any(t["status"] == "queued" for t in download_queue):
         ensure_worker()
     start_extension_server()
-    js_name, js_path = find_js_runtime()
-    log.info("JS runtime: %s", f"{js_name} ({js_path})" if js_name else "پیدا نشد")
 
     web_dir = os.path.join(BASE_DIR, "web")
     if not os.path.isfile(os.path.join(web_dir, "index.html")):
         web_dir = BASE_DIR
-    if not os.path.isfile(os.path.join(web_dir, "index.html")):
-        raise FileNotFoundError("فایل index.html پیدا نشد (باید در پوشه web یا کنار main.py باشد)")
     eel.init(web_dir)
 
     port = free_port()
-    args = dict(host="localhost", port=port, size=(900, 940), position=(300, 50),
+    args = dict(host="localhost", port=port, size=(940, 960), position=(280, 40),
                 cmdline_args=["--disable-features=Translate"])
     for mode in ("chrome", "edge"):
         try:
             eel.start("index.html", mode=mode, **args)
             return
-        except EnvironmentError as e:
-            log.warning("مرورگر %s پیدا نشد: %s", mode, e)
+        except EnvironmentError:
+            pass
         except (SystemExit, KeyboardInterrupt):
             return
 
-    log.warning("از مرورگر پیش‌فرض استفاده می‌شود")
     eel.start("index.html", mode=None, block=False, host="localhost", port=port)
     webbrowser.open(f"http://localhost:{port}/index.html")
     while True:
@@ -1242,5 +1343,5 @@ if __name__ == "__main__":
         save_queue_state(force=True)
         text = traceback.format_exc()
         log.critical("برنامه با خطا بسته شد:\n%s", text)
-        show_fatal("ADM Pro", "برنامه با خطا بسته شد.\n\nجزئیات در فایل logs\\app.log ذخیره شد.\n\n" + text[-600:])
+        show_fatal("ADM Pro", "برنامه با خطا بسته شد.\n\n" + text[-600:])
         sys.exit(1)
